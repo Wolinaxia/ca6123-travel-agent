@@ -361,6 +361,26 @@ def test_common_word_codes_are_not_airports(state):
     assert verdict["status"] == "supported"
 
 
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Rail is a reliable same-day option any day this week.",
+        "Book a bed near the station and sit in row 5; the art museum is a short walk.",
+    ],
+)
+def test_lowercase_words_that_are_iata_codes_are_not_airports(state, text):
+    # "day" is DAY (Dayton), "bed" BED, "row" ROW, "art" ART, "sit" SIT.
+    verdict = verify_claim(_claim(text, [SUMMARY]), state["evidence_store"])
+    assert verdict["status"] == "supported", verdict
+
+
+def test_uppercase_code_without_evidence_is_still_flagged(state):
+    verdict = verify_claim(
+        _claim("DAY has a ground stop tonight.", [SUMMARY]), state["evidence_store"]
+    )
+    assert verdict["status"] == "unsupported"
+
+
 def test_airport_codes_match_on_word_boundaries(state):
     _store(
         state,
