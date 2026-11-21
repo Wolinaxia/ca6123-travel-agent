@@ -27,6 +27,52 @@ def _trip(days=1, window="whole_day"):
     return TripRequest(origin_text="New York", destination_text="San Francisco", origin_city="New York", destination_city="San Francisco", departure_date=date(2026, 9, 23) + timedelta(days=days), departure_window=window, origin_airport="JFK", destination_airport="SFO", origin_latlon=(40.7128, -74.006), destination_latlon=(37.7749, -122.4194), origin_timezone="America/New_York", destination_timezone="America/Los_Angeles")
 
 
+def _prior_trip(day=date(2026, 11, 21)):
+    return TripRequest(
+        origin_text="New York",
+        destination_text="Boston",
+        origin_city="New York",
+        destination_city="Boston",
+        departure_date=day,
+        departure_window="evening",
+        origin_airport="JFK",
+        destination_airport="BOS",
+        origin_latlon=(40.6413, -73.7781),
+        destination_latlon=(42.3656, -71.0096),
+        origin_timezone="America/New_York",
+        destination_timezone="America/New_York",
+    )
+
+
+def test_bts_prior_is_info_and_does_not_raise_level():
+    assessment = evaluate(_prior_trip(), SourceInputs(), datetime(2026, 11, 21, 12, tzinfo=timezone.utc))
+    bts = [item for item in assessment.evidence if item.rule_id == "BTS_BASE_CAP"]
+    assert bts
+    assert bts[0].level == "info"
+    assert bts[0].category == "delay"
+    assert "Departure delay" in bts[0].detail
+    assert assessment.level == "low"
+
+
+def test_holiday_peak_prior_is_info_and_does_not_raise_level():
+    assessment = evaluate(_prior_trip(date(2026, 11, 25)), SourceInputs(), datetime(2026, 11, 25, 12, tzinfo=timezone.utc))
+    peak = [item for item in assessment.evidence if item.rule_id == "HOLIDAY_PEAK"]
+    assert peak
+    assert peak[0].level == "info"
+    assert peak[0].category == "delay"
+    assert assessment.level == "low"
+
+
+def test_prior_amplifier_note_does_not_raise_live_level():
+    faa = FaaNasData(ground_delays=[FaaGroundDelay(airport="BOS", reason="capacity", avg_minutes=20, max_minutes=40)])
+    assessment = evaluate(_prior_trip(), SourceInputs(faa=_result("faa", faa)), datetime(2026, 11, 21, 12, tzinfo=timezone.utc))
+    amplifier = [item for item in assessment.evidence if "make recovery slower" in item.detail]
+    assert len(amplifier) == 1
+    assert amplifier[0].level == "info"
+    assert amplifier[0].leg == "flight"
+    assert assessment.level == "elevated"
+
+
 def test_scenario_a_destination_gdp_drives_flight():
     weather = parse_wx(TAF, METAR)
     ok_alerts = _result("alerts", [])

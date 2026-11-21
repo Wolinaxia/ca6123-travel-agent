@@ -313,12 +313,20 @@ def evaluate(trip: TripRequest, inputs: SourceInputs, now: datetime, policy: Pol
     if inputs.faa and not inputs.faa.ok:
         _add(evidence, "flight", "info", "info", "SOURCE_UNAVAILABLE", "faa unavailable", inputs.faa.error or "source failed", "faa", inputs.faa)
     base = route_base_rate(trip.origin_airport, trip.destination_airport, trip.departure_date.month) if trip.origin_airport and trip.destination_airport else None
-    if base and (base.get("dep_del15", 0) >= policy.bts_delay_threshold or base.get("cancel_rate", 0) >= policy.bts_cancel_threshold):
-        _add(evidence, "flight", "delay", "elevated", "BTS_BASE_CAP", "Historical route disruption rate", f"Departure delay {base.get('dep_del15', 0):.1%} ({base.get('basis', 'monthly')})", "bts")
-        levels["flight"] = _max_level(levels["flight"], "elevated")
-    if is_peak_travel(trip.departure_date):
-        _add(evidence, "flight", "delay", "elevated", "HOLIDAY_PEAK", "Peak travel window", str(trip.departure_date), "holidays")
-        levels["flight"] = _max_level(levels["flight"], "elevated")
+    bts_applies = bool(base and (base.get("dep_del15", 0) >= policy.bts_delay_threshold or base.get("cancel_rate", 0) >= policy.bts_cancel_threshold))
+    if bts_applies:
+        _add(evidence, "flight", "delay", "info", "BTS_BASE_CAP", "Historical route disruption rate", f"Departure delay {base.get('dep_del15', 0):.1%} ({base.get('basis', 'monthly')})", "bts")
+    peak_applies = is_peak_travel(trip.departure_date)
+    if peak_applies:
+        _add(evidence, "flight", "delay", "info", "HOLIDAY_PEAK", "Peak travel window", str(trip.departure_date), "holidays")
+    live_flight_elevated = any(
+        item.leg == "flight" and item.level != "info" and LEVELS[item.level] >= LEVELS["elevated"]
+        for item in evidence
+        if item.rule_id not in {"BTS_BASE_CAP", "HOLIDAY_PEAK"}
+    )
+    if live_flight_elevated and (bts_applies or peak_applies):
+        rule = "BTS_BASE_CAP" if bts_applies else "HOLIDAY_PEAK"
+        _add(evidence, "flight", "delay", "info", rule, "Background priors", "Background priors (historical rate / holiday peak) make recovery slower", "bts" if bts_applies else "holidays")
     for leg_name in levels:
         leg_evidence = [item for item in evidence if item.leg == leg_name and item.level != "info"]
         levels[leg_name] = max((item.level for item in leg_evidence), key=lambda value: LEVELS[value], default="low")
