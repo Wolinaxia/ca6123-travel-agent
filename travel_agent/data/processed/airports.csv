@@ -1,0 +1,503 @@
+iata,icao,name,municipality,lat,lon,timezone
+WKK,5A8,Aleknagik / New Airport,Aleknagik,59.2826004028,-158.617996216,America/Anchorage
+BLD,K61B,Boulder City Municipal Airport,Boulder City,35.947161,-114.858799,America/Los_Angeles
+ABE,KABE,Lehigh Valley International Airport,Allentown/Bethlehem,40.651773,-75.442797,America/New_York
+ABI,KABI,Abilene Regional Airport,Abilene,32.4113006592,-99.68190002440001,America/Chicago
+ABQ,KABQ,Albuquerque International Sunport,Albuquerque,35.039976,-106.608925,America/Denver
+ABR,KABR,Aberdeen Regional Airport,Aberdeen,45.449100494384766,-98.42179870605469,America/Chicago
+ABY,KABY,Southwest Georgia Regional Airport,Albany,31.532946,-84.196215,America/Chicago
+ACK,KACK,Nantucket Memorial Airport,Nantucket,41.25310135,-70.06020355,America/New_York
+ACT,KACT,Waco Regional Airport,Waco,31.611299514770508,-97.23049926757812,America/Chicago
+ACV,KACV,California Redwood Coast-Humboldt County Airport,Arcata/Eureka,40.978101,-124.109,America/Los_Angeles
+ACY,KACY,Atlantic City International Airport,Atlantic City,39.456201,-74.577511,America/New_York
+AEX,KAEX,Alexandria International Airport,Alexandria,31.325828,-92.546702,America/Chicago
+AGS,KAGS,Augusta Regional At Bush Field,Augusta,33.3699,-81.9645,America/New_York
+AIA,KAIA,Alliance Municipal Airport,Alliance,42.052543,-102.803965,America/Denver
+ALB,KALB,Albany International Airport,Albany,42.748299,-73.801697,America/New_York
+ALO,KALO,Waterloo Regional Airport,Waterloo,42.557098388671875,-92.40029907226562,America/Chicago
+ALS,KALS,San Luis Valley Regional Airport/Bergman Field,Alamosa,37.434898,-105.866997,America/Denver
+ALW,KALW,Walla Walla Regional Airport,Walla Walla,46.09489822,-118.288002,America/Los_Angeles
+AMA,KAMA,Rick Husband Amarillo International Airport,Amarillo,35.217857,-101.706444,America/Denver
+AOO,KAOO,Altoona Blair County Airport,Altoona,40.296398,-78.32,America/New_York
+APN,KAPN,Alpena County Regional Airport,Alpena,45.0780983,-83.56030273,America/New_York
+ART,KART,Watertown International Airport,Watertown,43.991901,-76.021698,America/New_York
+ASE,KASE,Aspen-Pitkin County Airport (Sardy Field),Aspen,39.223202,-106.869003,America/Denver
+ATL,KATL,Hartsfield Jackson Atlanta International Airport,Atlanta,33.6367,-84.428101,America/Chicago
+ATW,KATW,Appleton International Airport,Appleton,44.258515,-88.519,America/Chicago
+ATY,KATY,Watertown Regional Airport,Watertown,44.91400146,-97.15470123,America/Chicago
+AUG,KAUG,Augusta State Airport,Augusta,44.320598602299995,-69.7973022461,America/New_York
+AUS,KAUS,Austin Bergstrom International Airport,Austin,30.197535,-97.662015,America/Chicago
+AVL,KAVL,Asheville Regional Airport,Asheville,35.435488,-82.541853,America/New_York
+AVP,KAVP,Wilkes-Barre/Scranton International Airport,Wilkes-Barre/Scranton,41.337064,-75.724232,America/New_York
+AZO,KAZO,Kalamazoo/Battle Creek International Airport,Kalamazoo,42.232105,-85.549637,America/Chicago
+BKG,KBBG,Branson Airport,Branson,36.532082,-93.200544,America/Chicago
+BDL,KBDL,Bradley International Airport,Hartford,41.938555,-72.688016,America/New_York
+BED,KBED,Laurence G Hanscom Field,Bedford,42.470001,-71.289001,America/New_York
+BFD,KBFD,Bradford Regional Airport,Bradford,41.8031005859375,-78.64009857177734,America/New_York
+BFF,KBFF,Western Neb. Rgnl/William B. Heilig Airport,Scottsbluff,41.87400055,-103.5960007,America/Denver
+BFI,KBFI,King County International Airport - Boeing Field,Seattle,47.527042,-122.29995,America/Los_Angeles
+BFL,KBFL,Meadows Field,Bakersfield,35.433601,-119.056999,America/Los_Angeles
+BGM,KBGM,Greater Binghamton/Edwin A Link field,Binghamton,42.20869827,-75.97979736,America/New_York
+BGR,KBGR,Bangor International Airport,Bangor,44.806364,-68.826668,America/New_York
+BHB,KBHB,Hancock County-Bar Harbor Airport,Bar Harbor,44.45000076,-68.3615036,America/New_York
+BHM,KBHM,Birmingham-Shuttlesworth International Airport,Birmingham,33.562877,-86.750712,America/Chicago
+BIH,KBIH,Eastern Sierra Regional Airport,Bishop,37.3731,-118.363998,America/Los_Angeles
+BIL,KBIL,Billings Logan International Airport,Billings,45.808932,-108.541242,America/Denver
+BIS,KBIS,Bismarck Municipal Airport,Bismarck,46.772734,-100.746874,America/Denver
+BJC,KBJC,Rocky Mountain Metropolitan Airport,Denver,39.908798,-105.116997,America/Denver
+BKW,KBKW,Raleigh County Memorial Airport,Beaver,37.7873,-81.124199,America/New_York
+BLI,KBLI,Bellingham International Airport,Bellingham,48.79280090332031,-122.53800201416016,America/Los_Angeles
+BLV,KBLV,Scott AFB/Midamerica Airport,Belleville,38.5452,-89.835197,America/Chicago
+BMI,KBMI,Central Illinois Regional Airport at Bloomington-Normal,Bloomington/Normal,40.4771,-88.915901,America/Chicago
+BNA,KBNA,Nashville International Airport,Nashville,36.1245,-86.6782,America/Chicago
+BOI,KBOI,Boise Air Terminal/Gowen Field,Boise,43.5644,-116.223,America/Los_Angeles
+BOS,KBOS,Boston Logan International Airport,Boston,42.36197,-71.0079,America/New_York
+BPT,KBPT,Jack Brooks Regional Airport,Beaumont/Port Arthur,29.9508,-94.020699,America/Chicago
+BQK,KBQK,Brunswick Golden Isles Airport,Brunswick,31.258801,-81.466499,America/New_York
+BRD,KBRD,Brainerd Lakes Regional Airport,Brainerd,46.402861,-94.129727,America/Chicago
+BRL,KBRL,Southeast Iowa Regional Airport,Burlington,40.783199310302734,-91.12550354003906,America/Chicago
+BRO,KBRO,Brownsville South Padre Island International Airport,Brownsville,25.907238,-97.425235,America/Chicago
+BTM,KBTM,Bert Mooney Airport,Butte,45.95479965209961,-112.49700164794922,America/Los_Angeles
+BTR,KBTR,Baton Rouge Metropolitan Airport,Baton Rouge,30.533199,-91.149597,America/Chicago
+BTV,KBTV,Patrick Leahy Burlington International Airport,Burlington,44.471901,-73.153297,America/New_York
+BUF,KBUF,Buffalo Niagara International Airport,Buffalo,42.940498,-78.732201,America/New_York
+BUR,KBUR,Hollywood Burbank/Bob Hope Airport,Burbank,34.202834,-118.35805,America/Los_Angeles
+BWI,KBWI,Baltimore/Washington International Thurgood Marshall Airport,Baltimore,39.1754,-76.668297,America/New_York
+BZN,KBZN,Bozeman Yellowstone International Airport,Bozeman,45.778853,-111.153711,America/Denver
+CAE,KCAE,Columbia Metropolitan Airport,Columbia,33.938172,-81.123022,America/New_York
+CAK,KCAK,Akron Canton Regional Airport,Akron,40.916099548339844,-81.44219970703125,America/New_York
+CCR,KCCR,Buchanan Field,Concord,37.9897,-122.056999,America/Los_Angeles
+CDC,KCDC,Cedar City Regional Airport,Cedar City,37.70100021362305,-113.0989990234375,America/Los_Angeles
+CDR,KCDR,Chadron Municipal Airport,Chadron,42.837601,-103.095001,America/Denver
+CEC,KCEC,Jack Mc Namara Field Airport,Crescent City,41.778929,-124.236403,America/Los_Angeles
+CEZ,KCEZ,Cortez Municipal Airport,Cortez,37.303001,-108.627998,America/Denver
+CGI,KCGI,Cape Girardeau Regional Airport,Cape Girardeau,37.2253,-89.570801,America/Chicago
+CHA,KCHA,Chattanooga Metropolitan Airport (Lovell Field),Chattanooga,35.035301,-85.203796,America/Chicago
+CHO,KCHO,Charlottesville Albemarle Airport,Charlottesville,38.13859939575195,-78.4529037475586,America/New_York
+CHS,KCHS,Charleston International Airport,Charleston,32.896159,-80.038151,America/New_York
+CID,KCID,The Eastern Iowa Airport,Cedar Rapids,41.884701,-91.7108,America/Chicago
+CIU,KCIU,Chippewa County International Airport,Kincheloe,46.242038,-84.462082,America/Chicago
+CKB,KCKB,North Central West Virginia Airport,Bridgeport,39.2966,-80.228104,America/New_York
+CLE,KCLE,Cleveland Hopkins International Airport,Cleveland,41.411701,-81.8498,America/New_York
+CLL,KCLL,Easterwood Field,College Station,30.5886,-96.3638,America/Chicago
+CLT,KCLT,Charlotte Douglas International Airport,Charlotte,35.2140007019043,-80.94309997558594,America/New_York
+CMH,KCMH,John Glenn Columbus International Airport,Columbus,39.998001,-82.891899,America/New_York
+CMI,KCMI,University of Illinois Willard Airport,Savoy,40.039819,-88.276249,America/Chicago
+CMX,KCMX,Houghton County Memorial Airport,Hancock,47.168399810791016,-88.48909759521484,America/Chicago
+CNM,KCNM,Cavern City Air Terminal,Carlsbad,32.337501525878906,-104.26300048828125,America/Denver
+CNY,KCNY,Canyonlands Regional Airport,Moab,38.755001,-109.754997,America/Denver
+COD,KCOD,Yellowstone Regional Airport,Cody,44.520199,-109.024002,America/Denver
+COS,KCOS,City of Colorado Springs Municipal Airport,Colorado Springs,38.805801,-104.700996,America/Denver
+COU,KCOU,Columbia Regional Airport,Columbia,38.8181,-92.219597,America/Chicago
+CPR,KCPR,Casper-Natrona County International Airport,Casper,42.907381,-106.461609,America/Denver
+CRP,KCRP,Corpus Christi International Airport,Corpus Christi,27.770399,-97.501198,America/Chicago
+CLD,KCRQ,McClellan-Palomar Airport,Carlsbad,33.1283,-117.279999,America/Los_Angeles
+CRW,KCRW,Yeager Airport,Charleston,38.3731,-81.593201,America/New_York
+CSG,KCSG,Columbus Airport,Columbus,32.516415,-84.939602,America/Chicago
+CVG,KCVG,Cincinnati Northern Kentucky International Airport,Cincinnati / Covington,39.048801,-84.667801,America/Chicago
+CVN,KCVN,Clovis Municipal Airport,Clovis,34.426594,-103.078794,America/Denver
+CWA,KCWA,Central Wisconsin Airport,Mosinee,44.777448,-89.670238,America/Chicago
+CYS,KCYS,Cheyenne Regional Jerry Olson Field,Cheyenne,41.155701,-104.811997,America/Denver
+DAB,KDAB,Daytona Beach International Airport,Daytona Beach,29.18255,-81.059464,America/New_York
+DAL,KDAL,Dallas Love Field,Dallas,32.844776,-96.847653,America/Chicago
+DAY,KDAY,James M. Cox Dayton International Airport,Dayton,39.902401,-84.219398,America/Chicago
+DBQ,KDBQ,Dubuque Regional Airport,Dubuque,42.402,-90.709503,America/Chicago
+DCA,KDCA,Ronald Reagan Washington National Airport,Washington,38.8521,-77.037697,America/New_York
+DDC,KDDC,Dodge City Regional Airport,Dodge City,37.76340103149414,-99.9655990600586,America/Chicago
+DEC,KDEC,Decatur Airport,Decatur,39.834598541259766,-88.8656997680664,America/Chicago
+DEN,KDEN,Denver International Airport,Denver,39.860027,-104.673792,America/Denver
+DFW,KDFW,Dallas Fort Worth International Airport,Dallas-Fort Worth,32.896801,-97.038002,America/Chicago
+DHN,KDHN,Dothan Regional Airport,Dothan,31.321300506591797,-85.44960021972656,America/Chicago
+DIK,KDIK,Dickinson Theodore Roosevelt Regional Airport,Dickinson,46.797533,-102.801905,America/Denver
+DLH,KDLH,Duluth International Airport,Duluth,46.841873,-92.198746,America/Chicago
+DOV,KDOV,Dover Civil Air Terminal/Dover Air Force Base,Dover,39.129501,-75.466003,America/New_York
+DRO,KDRO,Durango La Plata County Airport,Durango,37.151501,-107.753998,America/Denver
+DSM,KDSM,Des Moines International Airport,Des Moines,41.534027,-93.656719,America/Chicago
+DSI,KDTS,Destin Executive Airport,Destin,30.400101,-86.471497,America/Chicago
+DTW,KDTW,Detroit Metropolitan Wayne County Airport,Detroit,42.21377,-83.353786,America/New_York
+DUJ,KDUJ,DuBois Regional Airport,Dubois,41.17829895,-78.8986969,America/New_York
+DVL,KDVL,Devils Lake Regional Airport,Devils Lake,48.115454,-98.908796,America/Chicago
+EAR,KEAR,Kearney Regional Airport,Kearney,40.727001,-99.006798,America/Chicago
+EAT,KEAT,Pangborn Memorial Airport,Wenatchee,47.398899,-120.207001,America/Los_Angeles
+EAU,KEAU,Chippewa Valley Regional Airport,Eau Claire,44.86579895019531,-91.48429870605469,America/Chicago
+ECP,KECP,Northwest Florida Beaches International Airport,Panama City Beach,30.357106,-85.795414,America/Chicago
+EGE,KEGE,Eagle County Regional Airport,Eagle,39.64260101,-106.9179993,America/Denver
+EKO,KEKO,Elko Regional Airport,Elko,40.82490158081055,-115.79199981689453,America/Los_Angeles
+ELD,KELD,South Arkansas Regional Airport at Goodwin Field,El Dorado,33.221001,-92.813301,America/Chicago
+ELM,KELM,Elmira Corning Regional Airport,Elmira/Corning,42.1599006652832,-76.8916015625,America/New_York
+ELP,KELP,El Paso International Airport,El Paso,31.809908,-106.375607,America/Denver
+ERI,KERI,Erie International Tom Ridge Field,Erie,42.083127,-80.173867,America/New_York
+ESC,KESC,Delta County Airport,Escanaba,45.723199,-87.088623,America/Chicago
+EUG,KEUG,Eugene Airport,Eugene,44.124599,-123.211998,America/Los_Angeles
+EVV,KEVV,Evansville Regional Airport,Evansville,38.0369987488,-87.5324020386,America/Chicago
+EWB,KEWB,New Bedford Regional Airport,New Bedford,41.67610168457031,-70.95690155029297,America/New_York
+EWN,KEWN,Coastal Carolina Regional Airport,New Bern,35.0730018616,-77.04290008539999,America/New_York
+EWR,KEWR,Newark Liberty International Airport,Newark,40.6894,-74.170545,America/New_York
+EYW,KEYW,Key West International Airport,Key West,24.556119,-81.759579,America/New_York
+FAR,KFAR,Hector International Airport,Fargo,46.9207,-96.815804,America/Chicago
+FAT,KFAT,Fresno Yosemite International Airport,Fresno,36.775767,-119.718018,America/Los_Angeles
+FAY,KFAY,Fayetteville Regional Airport - Grannis Field,Fayetteville,34.991199,-78.880302,America/New_York
+FRD,KFHR,Friday Harbor Airport,Friday Harbor,48.523654,-123.024645,America/Los_Angeles
+FLG,KFLG,Flagstaff Pulliam Airport,Flagstaff,35.139757,-111.669826,America/Denver
+FLL,KFLL,Fort Lauderdale Hollywood International Airport,Fort Lauderdale,26.072599,-80.152702,America/New_York
+FLO,KFLO,Florence Regional Airport,Florence,34.18539810180664,-79.7238998413086,America/New_York
+FNT,KFNT,Bishop International Airport,Flint,42.969294,-83.743355,America/New_York
+FOD,KFOD,Fort Dodge Regional Airport,Fort Dodge,42.552624,-94.191237,America/Chicago
+FSD,KFSD,Sioux Falls Regional Airport,Sioux Falls,43.585463,-96.741152,America/Chicago
+FSM,KFSM,Fort Smith Regional Airport,Fort Smith,35.336601,-94.367401,America/Chicago
+FTW,KFTW,Fort Worth Meacham International Airport,Fort Worth,32.819919,-97.360818,America/Chicago
+FWA,KFWA,Fort Wayne International Airport,Fort Wayne,40.978896,-85.194465,America/Chicago
+GCC,KGCC,Northeast Wyoming Regional Airport,Gillette,44.3489,-105.539001,America/Denver
+GCK,KGCK,Garden City Regional Airport,Garden City,37.9275016785,-100.723999023,America/Denver
+GCN,KGCN,Grand Canyon National Park Airport,Grand Canyon - Tusayan,35.9524,-112.147003,America/Los_Angeles
+GDV,KGDV,Dawson Community Airport,Glendive,47.137658,-104.80691,America/Denver
+GEG,KGEG,Spokane International Airport,Spokane,47.6199,-117.533997,America/Los_Angeles
+GFK,KGFK,Grand Forks International Airport,Grand Forks,47.949299,-97.176102,America/Chicago
+GGG,KGGG,East Texas Regional Airport,Longview,32.38399887084961,-94.71150207519531,America/Chicago
+GGW,KGGW,Glasgow Valley County Airport Wokal Field,Glasgow,48.212502,-106.614998,America/Denver
+GJT,KGJT,Grand Junction Regional Airport,Grand Junction,39.126663,-108.529387,America/Denver
+GLH,KGLH,Mid Delta Regional Airport,Greenville,33.482899,-90.985603,America/Chicago
+GNV,KGNV,Gainesville Regional Airport,Gainesville,29.6900997162,-82.2717971802,America/New_York
+FCA,KGPI,Glacier Park International Airport,Kalispell,48.310501,-114.255997,America/Los_Angeles
+GPT,KGPT,Gulfport Biloxi International Airport,Gulfport,30.405582,-89.069836,America/Chicago
+GRB,KGRB,Austin Straubel International Airport,Green Bay,44.483459,-88.130805,America/Chicago
+GRI,KGRI,Central Nebraska Regional Airport,Grand Island,40.967498779296875,-98.30960083007812,America/Chicago
+GRK,KGRK,Killeen Regional Airport / Robert Gray Army Airfield,Fort Cavazos,31.0672,-97.828903,America/Chicago
+GRR,KGRR,Gerald R. Ford International Airport,Grand Rapids,42.880798,-85.522797,America/Chicago
+GSO,KGSO,Piedmont Triad International Airport,Greensboro,36.09937,-79.937262,America/New_York
+GSP,KGSP,Greenville-Spartanburg International Airport,Greenville/Greer/Spartanburg,34.895699,-82.218903,America/New_York
+GTF,KGTF,Great Falls International Airport,Great Falls,47.481998,-111.371002,America/Denver
+GTR,KGTR,Golden Triangle Regional Airport,Columbus/W Point/Starkville,33.450298,-88.5914,America/Chicago
+GUC,KGUC,Gunnison Crested Butte Regional Airport,Gunnison,38.534672,-106.934566,America/Denver
+GUP,KGUP,Gallup Municipal Airport,Gallup,35.511653,-108.788166,America/Denver
+GYY,KGYY,Gary/Chicago International Airport,Gary,41.617087,-87.413206,America/Chicago
+HDN,KHDN,Yampa Valley Airport,Hayden,40.481201,-107.218002,America/Denver
+HGR,KHGR,Hagerstown Regional Richard A Henson Field,Hagerstown,39.708771,-77.728014,America/New_York
+HHR,KHHR,Jack Northrop Field Hawthorne Municipal Airport,Hawthorne,33.922798,-118.334999,America/Los_Angeles
+HIB,KHIB,Range Regional Airport,Hibbing,47.384831,-92.836905,America/Chicago
+HII,KHII,Lake Havasu City Airport,Lake Havasu City,34.570506,-114.357745,America/Los_Angeles
+HLN,KHLN,Helena Regional Airport,Helena,46.6068,-111.983002,America/Denver
+HOB,KHOB,Lea County Regional Airport,Hobbs,32.6875,-103.217003,America/Denver
+HOT,KHOT,Memorial Field Airport,Hot Springs,34.4788,-93.096262,America/Chicago
+HOU,KHOU,William P. Hobby Airport,Houston,29.645336,-95.276812,America/Chicago
+HPN,KHPN,Westchester County Airport,White Plains,41.06700134277344,-73.70760345458984,America/New_York
+HRL,KHRL,Valley International Airport,Harlingen,26.228500366210938,-97.65440368652344,America/Chicago
+HRO,KHRO,Boone County Airport,Harrison,36.26150131225586,-93.15470123291016,America/Chicago
+HSV,KHSV,Huntsville International Airport,Huntsville,34.636244,-86.774378,America/Chicago
+HTS,KHTS,Tri-State Airport / Milton J. Ferguson Field,Huntington,38.366699,-82.557999,America/New_York
+HVN,KHVN,Tweed New Haven Airport,New Haven,41.262869,-72.887694,America/New_York
+HVR,KHVR,Havre City County Airport,Havre,48.541387,-109.762859,America/Denver
+HHH,KHXD,Hilton Head Airport,Hilton Head Island,32.2244,-80.697502,America/New_York
+HYA,KHYA,Cape Cod Gateway Airport,Hyannis,41.6693,-70.280403,America/New_York
+HYS,KHYS,Hays Regional Airport,Hays,38.844521,-99.273148,America/Chicago
+IAD,KIAD,Washington Dulles International Airport,Dulles,38.9445,-77.455803,America/New_York
+IAG,KIAG,Niagara Falls International Airport,Niagara Falls,43.1073,-78.946198,America/New_York
+IAH,KIAH,George Bush Intercontinental Airport,Houston,29.9844,-95.3414,America/Chicago
+ICT,KICT,Wichita Dwight D. Eisenhower National Airport,Wichita,37.650314,-97.428583,America/Chicago
+IDA,KIDA,Idaho Falls Regional Airport,Idaho Falls,43.514599,-112.070999,America/Los_Angeles
+ILG,KILG,Wilmington Airport,Wilmington,39.678699,-75.606499,America/New_York
+ILM,KILM,Wilmington International Airport,Wilmington,34.272345,-77.905117,America/New_York
+IMT,KIMT,Ford Airport,Kingsford,45.81911,-88.114557,America/Chicago
+IND,KIND,Indianapolis International Airport,Indianapolis,39.7173,-86.294403,America/Chicago
+INL,KINL,Falls International Airport,International Falls,48.566200256347656,-93.4030990600586,America/Chicago
+IPL,KIPL,Imperial County Airport,Imperial,32.83539,-115.574026,America/Los_Angeles
+IPT,KIPT,Williamsport Regional Airport,Williamsport,41.242126,-76.92245,America/New_York
+IRK,KIRK,Kirksville Regional Airport,Kirksville,40.09349822998047,-92.5448989868164,America/Chicago
+ISP,KISP,Long Island MacArthur Airport,Islip,40.796324,-73.101703,America/New_York
+ITH,KITH,Ithaca Tompkins Regional Airport,Ithaca,42.49100112915039,-76.4583969116211,America/New_York
+AZA,KIWA,Mesa Gateway Airport,Mesa,33.3078,-111.654999,America/Denver
+JAC,KJAC,Jackson Hole Airport,Jackson,43.6073,-110.737999,America/Denver
+JAN,KJAN,Jackson-Medgar Wiley Evers International Airport,Jackson,32.311199,-90.075897,America/Chicago
+JAX,KJAX,Jacksonville International Airport,Jacksonville,30.492469,-81.687813,America/New_York
+JBR,KJBR,Jonesboro Municipal Airport,Jonesboro,35.83169937133789,-90.64640045166016,America/Chicago
+JFK,KJFK,John F. Kennedy International Airport,New York,40.639447,-73.779317,America/New_York
+JLN,KJLN,Joplin Regional Airport,Joplin,37.151798,-94.498299,America/Chicago
+JMS,KJMS,Jamestown Regional Airport,Jamestown,46.92969894,-98.67819977,America/Chicago
+USA,KJQF,Concord-Padgett Regional Airport,Concord,35.387798,-80.709099,America/New_York
+JST,KJST,John Murtha Johnstown Cambria County Airport,Johnstown,40.31610107421875,-78.83390045166016,America/New_York
+LAF,KLAF,Purdue University Airport,West Lafayette,40.412875,-86.939363,America/Chicago
+LAL,KLAL,Lakeland Linder International Airport,Lakeland,27.989267,-82.020715,America/New_York
+LAN,KLAN,Capital Region International Airport,Lansing,42.777582,-84.585721,America/Chicago
+LAR,KLAR,Laramie Regional Airport,Laramie,41.31209945678711,-105.67500305175781,America/Denver
+LAS,KLAS,Harry Reid International Airport,Las Vegas,36.083361,-115.151817,America/Los_Angeles
+LAW,KLAW,Lawton Fort Sill Regional Airport,Lawton,34.567699,-98.416603,America/Chicago
+LAX,KLAX,Los Angeles International Airport,Los Angeles,33.942501,-118.407997,America/Los_Angeles
+LBB,KLBB,Lubbock Preston Smith International Airport,Lubbock,33.663601,-101.822998,America/Denver
+LBE,KLBE,Arnold Palmer Regional Airport,Latrobe,40.275902,-79.4048,America/New_York
+LBF,KLBF,North Platte Regional Airport Lee Bird Field,North Platte,41.12620163,-100.6839981,America/Denver
+LBL,KLBL,Liberal Mid-America Regional Airport,Liberal,37.0442009,-100.9599991,America/Denver
+LCH,KLCH,Lake Charles Regional Airport,Lake Charles,30.126100540161133,-93.22329711914062,America/Chicago
+LCK,KLCK,Rickenbacker International Airport,Columbus,39.813801,-82.927803,America/New_York
+LEB,KLEB,Lebanon Municipal Airport,Lebanon,43.626098632799994,-72.30419921880001,America/New_York
+LEX,KLEX,Blue Grass Airport,Lexington,38.035066,-84.606738,America/Chicago
+LFT,KLFT,Lafayette Regional Airport,Lafayette,30.205299,-91.987602,America/Chicago
+LGA,KLGA,LaGuardia Airport,New York,40.777199,-73.872597,America/New_York
+LGB,KLGB,Long Beach International Airport,Long Beach,33.816523,-118.149891,America/Los_Angeles
+LIT,KLIT,Bill & Hillary Clinton National Airport/Adams Field,Little Rock,34.729222,-92.223591,America/Chicago
+LNK,KLNK,Lincoln Airport,Lincoln,40.844882,-96.76178,America/Chicago
+LNS,KLNS,Lancaster Airport,Lancaster,40.121700286865234,-76.29609680175781,America/New_York
+LRD,KLRD,Laredo International Airport,Laredo,27.5438,-99.461601,America/Chicago
+LRU,KLRU,Las Cruces International Airport,Las Cruces,32.289398,-106.921997,America/Denver
+LSE,KLSE,La Crosse Regional Airport,La Crosse,43.879002,-91.256699,America/Chicago
+LUK,KLUK,Cincinnati Municipal Airport Lunken Field,Cincinnati,39.102357,-84.418945,America/Chicago
+LWB,KLWB,Greenbrier Valley Airport,Lewisburg,37.857914,-80.400438,America/New_York
+LWS,KLWS,Lewiston Nez Perce County Airport,Lewiston,46.3745002746582,-117.01499938964844,America/Los_Angeles
+LYH,KLYH,Lynchburg Regional Airport - Preston Glenn Field,Lynchburg,37.326698,-79.200401,America/New_York
+MAF,KMAF,Midland International Air and Space Port,Midland,31.942499,-102.202003,America/Denver
+MBS,KMBS,MBS International Airport,Freeland,43.533181,-84.083104,America/Chicago
+MCE,KMCE,Merced Regional Macready Field,Merced,37.284698,-120.514,America/Los_Angeles
+MCI,KMCI,Kansas City International Airport,Kansas City,39.301699,-94.713893,America/Chicago
+MCK,KMCK,McCook Ben Nelson Regional Airport,McCook,40.207787,-100.592794,America/Denver
+MCN,KMCN,Middle Georgia Regional Airport,Macon,32.69279861450195,-83.64920043945312,America/New_York
+MCO,KMCO,Orlando International Airport,Orlando,28.429399490356445,-81.30899810791016,America/New_York
+MCW,KMCW,Mason City Municipal Airport,Mason City,43.159801,-93.329716,America/Chicago
+MDT,KMDT,Harrisburg International Airport,Harrisburg,40.192838,-76.762333,America/New_York
+MDW,KMDW,Chicago Midway International Airport,Chicago,41.785999,-87.752403,America/Chicago
+MEI,KMEI,Key Field / Meridian Regional Airport,Meridian,32.3326,-88.7519,America/Chicago
+MEM,KMEM,Frederick W. Smith International Airport,Memphis,35.043845,-89.97634,America/Chicago
+MFE,KMFE,McAllen Miller International Airport,McAllen,26.176141,-98.237965,America/Chicago
+MFR,KMFR,Rogue Valley International-Medford Airport,Medford,42.374199,-122.873001,America/Los_Angeles
+MGC,KMGC,Michigan City Municipal Airport,Michigan City,41.7033,-86.821198,America/Chicago
+MGM,KMGM,Montgomery Regional (Dannelly Field) Airport,Montgomery,32.300598,-86.393997,America/Chicago
+MGW,KMGW,Morgantown Municipal Airport Walter L. (Bill) Hart Field,Morgantown,39.643305,-79.917598,America/New_York
+MHK,KMHK,Manhattan Regional Airport,Manhattan,39.14099884033203,-96.6707992553711,America/Chicago
+MHT,KMHT,Manchester-Boston Regional Airport,Manchester,42.932598,-71.435699,America/New_York
+MIA,KMIA,Miami International Airport,Miami,25.796011,-80.289751,America/New_York
+MKE,KMKE,General Mitchell International Airport,Milwaukee,42.947201,-87.896599,America/Chicago
+MKG,KMKG,Muskegon County Airport,Muskegon,43.169498,-86.238197,America/Chicago
+MKL,KMKL,McKellar-Sipes Regional Airport,Jackson,35.599899,-88.915604,America/Chicago
+MLB,KMLB,Melbourne Orlando International Airport,Melbourne,28.102009,-80.641088,America/New_York
+MLI,KMLI,Quad City International Airport,Moline,41.448502,-90.5075,America/Chicago
+MLU,KMLU,Monroe Regional Airport,Monroe,32.510899,-92.037697,America/Chicago
+MMH,KMMH,Mammoth Yosemite Airport,Mammoth Lakes,37.625381,-118.84306,America/Los_Angeles
+MOB,KMOB,Mobile Regional Airport,Mobile,30.6912,-88.242798,America/Chicago
+MOT,KMOT,Minot International Airport,Minot,48.25801,-101.279123,America/Denver
+MRY,KMRY,Monterey Regional Airport,Monterey,36.586777,-121.844183,America/Los_Angeles
+MSL,KMSL,Northwest Alabama Regional Airport,Muscle Shoals,34.745123,-87.612981,America/Chicago
+MSN,KMSN,Dane County Regional Truax Field,Madison,43.1399,-89.337502,America/Chicago
+MSO,KMSO,Missoula Montana Airport,Missoula,46.915816,-114.091107,America/Los_Angeles
+MSP,KMSP,Minneapolis–Saint Paul International Airport / Wold–Chamberlain Field,Minneapolis,44.880081,-93.221741,America/Chicago
+MSS,KMSS,Massena International Airport Richards Field,Massena,44.936157,-74.844304,America/New_York
+MSY,KMSY,Louis Armstrong New Orleans International Airport,New Orleans,29.993401,-90.264673,America/Chicago
+MTJ,KMTJ,Montrose Regional Airport,Montrose,38.5098,-107.893997,America/Denver
+MWA,KMWA,Veterans Airport of Southern Illinois,Marion,37.751208,-89.016568,America/Chicago
+MWL,KMWL,Mineral Wells Regional Airport,Mineral Wells,32.781601,-98.060204,America/Chicago
+MYL,KMYL,McCall Municipal Airport,McCall,44.888837,-116.101112,America/Los_Angeles
+MYR,KMYR,Myrtle Beach International Airport,Myrtle Beach,33.679699,-78.928299,America/New_York
+YUM,KNYL,Yuma International Airport / Marine Corps Air Station Yuma,Yuma,32.650938,-114.609375,America/Los_Angeles
+OAJ,KOAJ,Albert J Ellis Airport,Richlands,34.829201,-77.612099,America/New_York
+OAK,KOAK,Oakland San Francisco Bay Airport,Oakland,37.720085,-122.221184,America/Los_Angeles
+OGD,KOGD,Ogden Hinckley Airport,Ogden,41.195899963379,-112.0120010376,America/Los_Angeles
+OGS,KOGS,Ogdensburg International Airport,Ogdensburg,44.6819,-75.4655,America/New_York
+OKC,KOKC,OKC Will Rogers World Airport,Oklahoma City,35.393388,-97.598248,America/Chicago
+OLF,KOLF,L M Clayton Airport,Wolf Point,48.094501,-105.574997,America/Denver
+OLM,KOLM,Olympia Regional Airport,Olympia,46.969399,-122.903,America/Los_Angeles
+OMA,KOMA,Eppley Airfield,Omaha,41.3032,-95.894096,America/Chicago
+ONT,KONT,Ontario International Airport,Ontario,34.056,-117.600998,America/Los_Angeles
+OPF,KOPF,Miami-Opa Locka Executive Airport,Miami,25.907,-80.278397,America/New_York
+ORD,KORD,Chicago O'Hare International Airport,Chicago,41.9786,-87.9048,America/Chicago
+ORF,KORF,Norfolk International Airport,Norfolk,36.895341,-76.201,America/New_York
+ORH,KORH,Worcester Regional Airport,Worcester,42.2673,-71.875702,America/New_York
+ESD,KORS,Orcas Island Airport,Eastsound,48.708199,-122.910004,America/Los_Angeles
+OTH,KOTH,Southwest Oregon Regional Airport,North Bend,43.41709899902344,-124.24600219726562,America/Los_Angeles
+OWB,KOWB,Owensboro Daviess County Airport,Owensboro,37.74010086,-87.16680145,America/Chicago
+OCE,KOXB,Ocean City Municipal Airport,Ocean City,38.310398,-75.124001,America/New_York
+PAE,KPAE,Seattle Paine Field International Airport,Everett,47.9063,-122.281998,America/Los_Angeles
+PAH,KPAH,Barkley Regional Airport,Paducah,37.06079864501953,-88.7738037109375,America/Chicago
+PBG,KPBG,Plattsburgh International Airport,Plattsburgh,44.650902,-73.468102,America/New_York
+DJT,KPBI,President Donald J. Trump International Airport,West Palm Beach,26.683201,-80.095596,America/New_York
+PDK,KPDK,DeKalb Peachtree Airport,Atlanta,33.87633,-84.30213,America/Chicago
+PDT,KPDT,Eastern Oregon Regional Airport at Pendleton,Pendleton,45.695099,-118.841003,America/Los_Angeles
+PDX,KPDX,Portland International Airport,Portland,45.588699,-122.598,America/Los_Angeles
+PGA,KPGA,Page Municipal Airport,Page,36.924234,-111.447716,America/Denver
+PGD,KPGD,Punta Gorda Airport,Punta Gorda,26.9202,-81.990501,America/New_York
+PGV,KPGV,Pitt-Greenville Airport,Greenville,35.635535,-77.384262,America/New_York
+PHF,KPHF,Newport News Williamsburg International Airport,Newport News,37.131901,-76.492996,America/New_York
+PHL,KPHL,Philadelphia International Airport,Philadelphia,39.871899,-75.241096,America/New_York
+PHX,KPHX,Phoenix Sky Harbor International Airport,Phoenix,33.435302,-112.005905,America/Phoenix
+PIA,KPIA,General Wayne A. Downing Peoria International Airport,Peoria,40.663841,-89.692631,America/Chicago
+PIB,KPIB,Hattiesburg Laurel Regional Airport,Moselle,31.4671,-89.337097,America/Chicago
+PIE,KPIE,St. Petersburg Clearwater International Airport,Pinellas Park,27.9102,-82.687401,America/New_York
+PIH,KPIH,Pocatello Regional Airport,Pocatello,42.9098014831543,-112.59600067138672,America/Los_Angeles
+PIR,KPIR,Pierre Regional Airport,Pierre,44.38270187,-100.2860031,America/Denver
+PIT,KPIT,Pittsburgh International Airport,Pittsburgh,40.491501,-80.232903,America/New_York
+PKB,KPKB,Mid Ohio Valley Regional Airport,Parkersburg (Williamstown),39.3451,-81.439201,America/New_York
+PLN,KPLN,Pellston Regional Airport of Emmet County Airport,Pellston,45.57089996,-84.79669952,America/Chicago
+PNS,KPNS,Pensacola International Airport,Pensacola,30.472718,-87.186639,America/Chicago
+PQI,KPQI,Presque Isle International Airport,Presque Isle,46.688999,-68.0448,America/New_York
+PRC,KPRC,Prescott Regional Airport - Ernest A. Love Field,Prescott,34.653502,-112.419883,America/Los_Angeles
+PSC,KPSC,Tri Cities Airport,Pasco,46.264702,-119.119003,America/Los_Angeles
+PSM,KPSM,Portsmouth International Airport at Pease,Portsmouth,43.0779,-70.823303,America/New_York
+PSP,KPSP,Palm Springs International Airport,Palm Springs,33.8297,-116.507004,America/Los_Angeles
+PUB,KPUB,Pueblo Memorial Airport,Pueblo,38.289101,-104.497002,America/Denver
+PUW,KPUW,Pullman-Moscow Regional Airport,Pullman,46.741601,-117.11163,America/Los_Angeles
+PVD,KPVD,Rhode Island T. F. Green International Airport,Providence/Warwick,41.725038,-71.425668,America/New_York
+PVU,KPVU,Provo Municipal Airport,Provo,40.218894,-111.722445,America/Denver
+PWM,KPWM,Portland International Jetport,Portland,43.646198,-70.309303,America/New_York
+RAP,KRAP,Rapid City Regional Airport,Rapid City,44.0452995300293,-103.05699920654297,America/Denver
+RDD,KRDD,Redding Municipal Airport,Redding,40.50899887,-122.2929993,America/Los_Angeles
+RDM,KRDM,Roberts Field,Redmond,44.254101,-121.150002,America/Los_Angeles
+RDU,KRDU,Raleigh-Durham International Airport,Raleigh/Durham,35.878659,-78.7873,America/New_York
+RFD,KRFD,Chicago Rockford International Airport,Chicago/Rockford,42.1954,-89.097198,America/Chicago
+RHI,KRHI,Rhinelander Oneida County Airport,Rhinelander,45.63119888305664,-89.46749877929688,America/Chicago
+RIC,KRIC,Richmond International Airport,Richmond,37.505199,-77.319702,America/New_York
+RIW,KRIW,Central Wyoming Regional Airport,Riverton,43.064201,-108.459999,America/Denver
+RKD,KRKD,Knox County Regional Airport,Rockland,44.060101,-69.099197,America/New_York
+RKS,KRKS,Southwest Wyoming Regional Airport,Rock Springs,41.5942,-109.065001,America/Denver
+RNO,KRNO,Reno Tahoe International Airport,Reno,39.4991,-119.767998,America/Los_Angeles
+ROA,KROA,Roanoke–Blacksburg Regional Airport,Roanoke,37.3255,-79.975403,America/New_York
+ROC,KROC,Frederick Douglass Greater Rochester International Airport,Rochester,43.1189,-77.672401,America/New_York
+ROW,KROW,Roswell Air Center Airport,Roswell,33.301601,-104.530998,America/Denver
+RST,KRST,Rochester International Airport,Rochester,43.908298,-92.5,America/Chicago
+RSW,KRSW,Southwest Florida International Airport,Fort Myers,26.534685,-81.752816,America/New_York
+RUT,KRUT,Rutland - Southern Vermont Regional Airport,Rutland,43.5294,-72.9496,America/New_York
+SAF,KSAF,Santa Fe Municipal Airport,Santa Fe,35.6171,-106.088997,America/Denver
+SAN,KSAN,San Diego International Airport,San Diego,32.733601,-117.190002,America/Los_Angeles
+SAT,KSAT,San Antonio International Airport,San Antonio,29.533701,-98.469803,America/Chicago
+SAV,KSAV,Savannah Hilton Head International Airport,Savannah,32.126591,-81.19998,America/New_York
+MQT,KSAW,Marquette Sawyer Regional Airport,Gwinn,46.351498,-87.395884,America/Chicago
+SBA,KSBA,Santa Barbara Municipal Airport,Santa Barbara,34.426201,-119.839996,America/Los_Angeles
+SBD,KSBD,San Bernardino International Airport,San Bernardino,34.096717,-117.236596,America/Los_Angeles
+SBN,KSBN,South Bend International Airport,South Bend,41.708304,-86.316922,America/Chicago
+SBP,KSBP,San Luis County Regional Airport,San Luis Obispo,35.236801147499996,-120.641998291,America/Los_Angeles
+SBY,KSBY,Salisbury Ocean City Wicomico Regional Airport,Salisbury,38.34049987792969,-75.51029968261719,America/New_York
+SCK,KSCK,Stockton Metropolitan Airport,Stockton,37.893279,-121.238079,America/Los_Angeles
+SDF,KSDF,Louisville Muhammad Ali International Airport,Louisville,38.1706,-85.735076,America/Chicago
+SDY,KSDY,Sidney - Richland Regional Airport,Sidney,47.705141,-104.194422,America/Denver
+SEA,KSEA,Seattle–Tacoma International Airport,Seattle,47.447943,-122.310276,America/Los_Angeles
+SFB,KSFB,Orlando Sanford International Airport,Orlando,28.774277,-81.234626,America/New_York
+SFO,KSFO,San Francisco International Airport,San Francisco,37.619806,-122.374821,America/Los_Angeles
+SGF,KSGF,Springfield Branson National Airport,Springfield,37.245047,-93.388596,America/Chicago
+UST,KSGJ,Northeast Florida Regional Airport,St Augustine,29.9592,-81.339798,America/New_York
+SGU,KSGU,St George Regional Airport,St George,37.036389,-113.510306,America/Los_Angeles
+SHD,KSHD,Shenandoah Valley Regional Airport,Weyers Cave,38.263802,-78.8964,America/New_York
+SHR,KSHR,Sheridan County Airport,Sheridan,44.76919937133789,-106.9800033569336,America/Denver
+SHV,KSHV,Shreveport Regional Airport,Shreveport,32.444747,-93.826741,America/Chicago
+SJC,KSJC,Mineta San Jose International Airport,San Jose,37.362452,-121.929188,America/Los_Angeles
+SJT,KSJT,San Angelo Regional Mathis Field,San Angelo,31.35770034790039,-100.49600219726562,America/Denver
+TSM,KSKX,Taos Regional Airport,Taos,36.452494,-105.67749,America/Denver
+SLC,KSLC,Salt Lake City International Airport,Salt Lake City,40.78886,-111.979866,America/Denver
+SLE,KSLE,Salem-Willamette Valley Airport/McNary Field,Salem,44.9095,-123.002998,America/Los_Angeles
+SLK,KSLK,Adirondack Regional Airport,Saranac Lake,44.38691,-74.204629,America/New_York
+SLN,KSLN,Salina Municipal Airport,Salina,38.79100036621094,-97.6521987915039,America/Chicago
+SMF,KSMF,Sacramento International Airport,Sacramento,38.6954,-121.591003,America/Los_Angeles
+SMN,KSMN,Lemhi County Airport,Salmon,45.122233,-113.88196,America/Los_Angeles
+SMX,KSMX,Santa Maria Public Airport Captain G Allan Hancock Field,Santa Maria,34.898899,-120.457001,America/Los_Angeles
+SNA,KSNA,John Wayne Orange County International Airport,Santa Ana,33.675063,-117.869281,America/Los_Angeles
+SOW,KSOW,Show Low Regional Airport,Show Low,34.264062,-110.007091,America/Denver
+SPI,KSPI,Abraham Lincoln Capital Airport,Springfield,39.844101,-89.677902,America/Chicago
+SPS,KSPS,Wichita Falls Municipal Airport / Sheppard Air Force Base,Wichita Falls,33.9888,-98.491898,America/Chicago
+SQL,KSQL,San Carlos Airport,San Carlos,37.51313,-122.250838,America/Los_Angeles
+SRQ,KSRQ,Sarasota Bradenton International Airport,Sarasota/Bradenton,27.394631,-82.554359,America/New_York
+STC,KSTC,Saint Cloud Regional Airport,Saint Cloud,45.5466,-94.059898,America/Chicago
+STL,KSTL,St. Louis Lambert International Airport,St Louis,38.748697,-90.370003,America/Chicago
+STS,KSTS,Charles M. Schulz Sonoma County Airport,Santa Rosa,38.50899887,-122.8130035,America/Los_Angeles
+SUN,KSUN,Friedman Memorial Airport,Hailey,43.50439835,-114.2959976,America/Los_Angeles
+SUX,KSUX,Sioux Gateway Airport / Brigadier General Bud Day Field,Sioux City,42.397605,-96.382237,America/Chicago
+SVC,KSVC,Grant County Airport,Silver City,32.636701,-108.154736,America/Denver
+SWF,KSWF,New York Stewart International Airport,Newburgh,41.50421,-74.108901,America/New_York
+SWO,KSWO,Stillwater Regional Airport,Stillwater,36.162132,-97.085581,America/Chicago
+SYR,KSYR,Syracuse Hancock International Airport,Syracuse,43.11119842529297,-76.1063003540039,America/New_York
+TBN,KTBN,Waynesville-St. Robert Regional Airport-Forney Field,Fort Leonard Wood,37.7416,-92.140701,America/Chicago
+TEB,KTEB,Teterboro Airport,Teterboro,40.850101,-74.060799,America/New_York
+TEX,KTEX,Telluride Regional Airport,Telluride,37.9538,-107.907997,America/Denver
+TIW,KTIW,Tacoma Narrows Airport,Tacoma,47.267407,-122.577295,America/Los_Angeles
+TLH,KTLH,Tallahassee International Airport,Tallahassee,30.401209,-84.35433,America/Chicago
+TOL,KTOL,Eugene F. Kranz Toledo Express Airport,Toledo,41.5868,-83.8078,America/New_York
+TPA,KTPA,Tampa International Airport,Tampa,27.9755,-82.533203,America/New_York
+TRI,KTRI,Tri-Cities Regional TN/VA Airport,Blountville,36.475201,-82.407401,America/New_York
+TKF,KTRK,Truckee Tahoe Airport,Truckee,39.318628,-120.140562,America/Los_Angeles
+TTN,KTTN,Trenton Mercer Airport,Ewing Township,40.276699,-74.813499,America/New_York
+TUL,KTUL,Tulsa International Airport,Tulsa,36.197084,-95.886225,America/Chicago
+TUP,KTUP,Tupelo Regional Airport,Tupelo,34.26810073852539,-88.7698974609375,America/Chicago
+TUS,KTUS,Tucson International Airport,Tucson,32.115004,-110.938053,America/Denver
+TVC,KTVC,Cherry Capital Airport,Traverse City,44.741402,-85.582199,America/Chicago
+TVF,KTVF,Thief River Falls Regional Airport,Thief River Falls,48.065701,-96.184998,America/Chicago
+TWF,KTWF,Joslin Field Magic Valley Regional Airport,Twin Falls,42.4818,-114.487999,America/Los_Angeles
+TXK,KTXK,Texarkana Regional Airport (Webb Field),Texarkana,33.453701,-93.990997,America/Chicago
+TYR,KTYR,Tyler Pounds Regional Airport,Tyler,32.35409927368164,-95.40239715576172,America/Chicago
+TYS,KTYS,McGhee Tyson Airport,Knoxville/Maryville,35.811001,-83.994003,America/New_York
+UIN,KUIN,Quincy Regional Airport Baldwin Field,Quincy,39.942699,-91.194603,America/Chicago
+SCE,KUNV,State College Regional Airport,State College,40.849374,-77.84852,America/New_York
+NPT,KUUU,Newport State Airport,Newport,41.532207,-71.281039,America/New_York
+VCT,KVCT,Victoria Regional Airport,Victoria,28.85260009765625,-96.91850280761719,America/Chicago
+VEL,KVEL,Vernal Regional Airport,Vernal,40.436214,-109.511661,America/Denver
+VLD,KVLD,Valdosta Regional Airport,Valdosta,30.782499313354492,-83.27670288085938,America/New_York
+VPS,KVPS,Destin-Fort Walton Beach Airport,Valparaiso,30.481315,-86.515839,America/Chicago
+VRB,KVRB,Vero Beach Regional Airport,Vero Beach,27.6556,-80.417901,America/New_York
+WST,KWST,Westerly State Airport,Westerly,41.349602,-71.803398,America/New_York
+WYS,KWYS,Yellowstone Airport,West Yellowstone,44.6884,-111.117996,America/Denver
+XNA,KXNA,Northwest Arkansas National Airport,Fayetteville/Springdale/Rogers,36.281898,-94.306801,America/Chicago
+XWA,KXWA,Williston Basin International Airport,Williston,48.260863,-103.75116,America/Denver
+YKM,KYKM,Yakima Air Terminal McAllister Field,Yakima,46.56819916,-120.5439987,America/Los_Angeles
+BTI,PABA,Barter Island Long Range Radar Station Airport,Barter Island,70.134003,-143.582001,America/Los_Angeles
+BET,PABE,Bethel Airport,Bethel,60.77980042,-161.8379974,America/Anchorage
+BRW,PABR,Wiley Post Will Rogers Memorial Airport,Utqiaġvik,71.285402,-156.766008,America/Anchorage
+CDB,PACD,Cold Bay Airport,Cold Bay,55.207871,-162.725029,America/Anchorage
+CDV,PACV,Merle K (Mudhole) Smith Airport,Cordova,60.491798,-145.477997,America/Los_Angeles
+DRG,PADE,Deering Airport,Deering,66.068901,-162.766914,America/Anchorage
+ADK,PADK,Adak Airport,Adak,51.883564,-176.642783,America/Anchorage
+DLG,PADL,Dillingham Airport,Dillingham,59.04470062,-158.5050049,America/Anchorage
+ADQ,PADQ,Kodiak Airport,Kodiak,57.75,-152.4940033,America/Anchorage
+DUT,PADU,Tom Madsen (Dutch Harbor) Airport,Unalaska,53.89881,-166.544996,America/Anchorage
+EMK,PAEM,Emmonak Airport,Emmonak,62.78609848,-164.4909973,America/Anchorage
+ENA,PAEN,Kenai Municipal Airport,Kenai,60.570946,-151.245174,America/Anchorage
+FAI,PAFA,Fairbanks International Airport,Fairbanks,64.815102,-147.856003,America/Los_Angeles
+ABL,PAFM,Ambler Airport,Ambler,67.105529,-157.855339,America/Anchorage
+GAL,PAGA,Edward G. Pitka Sr Airport,Galena,64.736198,-156.936997,America/Anchorage
+GKN,PAGK,Gulkana Airport,Gulkana,62.155859,-145.454662,America/Los_Angeles
+GAM,PAGM,Gambell Airport,Gambell,63.767694,-171.733303,America/Anchorage
+GST,PAGS,Gustavus Airport,Gustavus,58.4253006,-135.7070007,America/Los_Angeles
+HCR,PAHC,Holy Cross Airport,Holy Cross,62.18830108642578,-159.77499389648438,America/Anchorage
+HSL,PAHL,Huslia Airport,Huslia,65.697899,-156.350998,America/Anchorage
+HNS,PAHN,Haines Airport,Haines,59.243921,-135.523925,America/Los_Angeles
+HOM,PAHO,Homer Airport,Homer,59.644456,-151.479235,America/Anchorage
+EGX,PAII,Egegik Airport,Egegik,58.184386,-157.374873,America/Anchorage
+IAN,PAIK,Bob Baker Memorial Airport,Kiana,66.976128,-160.439014,America/Anchorage
+ILI,PAIL,Iliamna Airport,Iliamna,59.754398,-154.910996,America/Anchorage
+UTO,PAIM,Indian Mountain LRRS Airport,Utopia Creek,65.992798,-153.703995,America/Anchorage
+JNU,PAJN,Juneau International Airport,Juneau,58.354935,-134.574416,America/Los_Angeles
+AKN,PAKN,King Salmon Airport,King Salmon,58.677845,-156.651965,America/Anchorage
+AKP,PAKP,Anaktuvuk Pass Airport,Anaktuvuk Pass,68.133598,-151.742996,America/Anchorage
+KTN,PAKT,Ketchikan International Airport,Ketchikan,55.35559845,-131.7140045,America/Los_Angeles
+KLW,PAKW,Klawock Airport,Klawock,55.579201,-133.076004,America/Los_Angeles
+LUR,PALU,Cape Lisburne LRRS Airport,Cape Lisburne,68.875099,-166.110001,America/Anchorage
+MCG,PAMC,McGrath Airport,McGrath,62.95289993,-155.6060028,America/Anchorage
+MRI,PAMR,Merrill Field,Anchorage,61.212792,-149.843988,America/Los_Angeles
+MYU,PAMY,Mekoryuk Airport,Mekoryuk,60.372338,-166.269751,America/Anchorage
+ANC,PANC,Ted Stevens Anchorage International Airport,Anchorage,61.179004,-149.992561,America/Anchorage
+ANI,PANI,Aniak Airport,Aniak,61.581600189208984,-159.54299926757812,America/Anchorage
+ANV,PANV,Anvik Airport,Anvik,62.646702,-160.190994,America/Anchorage
+OME,PAOM,Nome Airport,Nome,64.51219940185547,-165.44500732421875,America/Anchorage
+ORT,PAOR,Northway Airport,Northway,62.9613,-141.929001,America/Los_Angeles
+OTZ,PAOT,Ralph Wien Memorial Airport,Kotzebue,66.88469696,-162.598999,America/Anchorage
+STG,PAPB,St George Airport,St George,56.577345,-169.663823,America/Anchorage
+PSG,PAPG,Petersburg James A Johnson Airport,Petersburg,56.80170059,-132.9450073,America/Los_Angeles
+PTH,PAPH,Port Heiden Airport,Port Heiden,56.957893,-158.630219,America/Anchorage
+PTU,PAPM,Platinum Airport,Platinum,59.017675,-161.827927,America/Anchorage
+NUI,PAQT,Nuiqsut Airport,Nuiqsut,70.209999,-151.005998,America/Anchorage
+ARC,PARC,Arctic Village Airport,Arctic Village,68.1147,-145.578995,America/Los_Angeles
+RBY,PARY,Ruby Airport,Ruby,64.727203,-155.470001,America/Anchorage
+SVA,PASA,Savoonga Airport,Savoonga,63.686401,-170.492996,America/Anchorage
+SCC,PASC,Deadhorse Airport,Deadhorse,70.19470215,-148.4649963,America/Los_Angeles
+SDP,PASD,Sand Point Airport,Sand Point,55.313908,-160.522099,America/Anchorage
+SIT,PASI,Sitka Rocky Gutierrez Airport,Sitka,57.04710006713867,-135.36199951171875,America/Los_Angeles
+SNP,PASN,St Paul Island Airport,St Paul Island,57.166311,-170.222555,America/Anchorage
+ATK,PATQ,Atqasuk Edward Burnell Sr Memorial Airport,Atqasuk,70.46704,-157.436013,America/Anchorage
+UNK,PAUN,Unalakleet Airport,Unalakleet,63.888401,-160.798996,America/Anchorage
+VDZ,PAVD,Valdez Pioneer Field,Valdez,61.132712,-146.246567,America/Los_Angeles
+WRG,PAWG,Wrangell Airport,Wrangell,56.48429871,-132.3699951,America/Los_Angeles
+AIN,PAWI,Wainwright Airport,Wainwright,70.638,-159.994995,America/Anchorage
+YAK,PAYA,Yakutat Airport,Yakutat,59.508717,-139.660435,America/Los_Angeles
+FYU,PFYU,Fort Yukon Airport,Fort Yukon,66.571651,-145.249987,America/Los_Angeles
+HNM,PHHN,Hana Airport,Hana,20.795601,-156.014008,America/Anchorage
+JHM,PHJH,Kapalua Airport,Lahaina,20.9629,-156.673004,America/Anchorage
+KOA,PHKO,Ellison Onizuka Kona International Airport at Keāhole,Kailua-Kona,19.738783,-156.045603,America/Anchorage
+LIH,PHLI,Lihue Airport,"Lihue, Kauai",21.974393,-159.337146,America/Anchorage
+MKK,PHMK,Molokai Airport,Kaunakakai,21.152901,-157.095993,America/Anchorage
+MUE,PHMU,Waimea Kohala Airport,Waimea (Kamuela),20.001301,-155.667999,America/Anchorage
+HNL,PHNL,Daniel K. Inouye International Airport,"Honolulu, Oahu",21.318387,-157.92567,Pacific/Honolulu
+LNY,PHNY,Lanai Airport,Lanai City,20.785675,-156.951324,America/Anchorage
+OGG,PHOG,Kahului International Airport,Kahului,20.896263,-156.431837,America/Anchorage
+ITO,PHTO,Hilo International Airport,Hilo,19.72135,-155.045428,America/Anchorage
+PIZ,PPIZ,Point Lay LRRS Airport,Point Lay,69.732903,-163.005005,America/Anchorage

@@ -1,4 +1,6 @@
 google-adk
 google-genai
 requests
+httpx
+pydantic
 pytest

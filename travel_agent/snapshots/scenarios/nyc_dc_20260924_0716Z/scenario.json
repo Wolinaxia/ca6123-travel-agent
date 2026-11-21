@@ -1,0 +1,7 @@
+{
+  "name": "nyc_dc_20260924_0716Z",
+  "description": "Recorded NYC to Washington DC live contrast with news captured; replay uses recorded sources and optional live LLM enrichment.",
+  "now": "2026-09-24T07:16:00Z",
+  "recorded_at": "2026-09-24T07:16:00Z",
+  "default_query": "New York to Washington DC tomorrow"
+}
