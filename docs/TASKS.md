@@ -11,6 +11,13 @@ Today: Sat 21 Nov. Submission: **Fri 4 Dec, 12:00 noon**. Peer evaluation: Tue 8
 - [ ] Guardrail test set (attacks that should be blocked + benign inputs that must pass)
 - [ ] Evaluation: historical disruption cases (with negative controls) → scored runs
 - [ ] Observability: ADK callbacks write a trace log per run
+- [ ] **Ablation: with vs without Verifier** (our main novelty evidence for the video)
+  - Same fixed task set (~15–20 goal-driven requests, run on recorded demo scenarios so results are reproducible and cheap)
+  - Run the full system twice: Verifier ON vs OFF (everything else identical, same model and seed/temperature 0)
+  - Per run, count: total claims, claims with no evidence, claims citing non-existent evidence, wrong numbers/airports, risk downplayed vs the rule engine
+  - Report: how many bad claims reach the user without the Verifier vs with it, plus how often the Verifier escalates to a human (and false escalations on correct claims)
+  - Output one table + one chart for the Responsible AI / Novelty segment; script in `eval/ablation.py`, results in `eval/results/`
+  - Depends on: orchestrator + specialists working end-to-end (M2–M4), so run it Fri 27 – Sun 29 Nov
 
 ### M2 — Orchestrator & Reasoning
 - [ ] Root agent in ADK; intent classes: `assess_trip` / `plan_trip` / `rebook` / `out_of_scope`
@@ -45,6 +52,7 @@ Today: Sat 21 Nov. Submission: **Fri 4 Dec, 12:00 noon**. Peer evaluation: Tue 8
 | Sat 21 – Mon 23 Nov | Everyone: ADK hello-world in Colab; agents built against mock tools |
 | Tue 24 Nov | M1: real tools merged |
 | Wed 25 – Fri 27 Nov | Integration: orchestrator ↔ specialists ↔ verifier; HITL; guardrails |
+| Fri 27 – Sun 29 Nov | M1: ablation runs (Verifier ON vs OFF), needs the full pipeline working |
 | **Sun 29 Nov** | **Feature freeze.** Only bug fixes after this |
 | Mon 30 Nov – Tue 1 Dec | Evaluation runs, record demo snapshots, slides, scripts |
 | Wed 2 – Thu 3 Dec | Record + edit video; final notebook clean-up |
@@ -63,7 +71,7 @@ Everyone must appear on screen and speak in their own voice (no TTS).
 | 4 | Action | M3 | 1:30 |
 | 5 | Learn | M4 | 1:15 |
 | 6 | Human–AI interaction | M4 | 1:15 |
-| 7 | Responsible AI (guardrails + tests + evaluation) | M1 | 2:00 |
+| 7 | Responsible AI (guardrails + tests + evaluation + Verifier ablation table) | M1 | 2:00 |
 | 8 | Bonus features + conclusions + contributions + AI-tool acknowledgement | M1 + all | 1:30 |
 
 Slides: large fonts, little text (wordy slides are penalised under Clarity). Show live demos where possible.

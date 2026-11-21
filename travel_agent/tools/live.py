@@ -844,14 +844,16 @@ def assess_trip_risk(origin: str, destination: str, departure_date: str, departu
                 "category": item.category,
                 "level": item.level,
                 "rule": item.rule_id,
-                "title": item.title,
-                "detail": item.detail,
             }
             if source in {"tomtom", "mta"}:
-                observation = f"{item.title} ({item.leg} leg, level: {item.level})"
+                # Operator text is untrusted: keep the raw string only in
+                # data["text"], never echoed into observation/title/detail.
+                observation = f"{item.category} ({item.leg} leg, level: {item.level})"
                 data["text"] = item.detail
                 data["untrusted"] = True
             else:
+                data["title"] = item.title
+                data["detail"] = item.detail
                 observation = item.detail or item.title
             evidence.append(
                 Evidence(

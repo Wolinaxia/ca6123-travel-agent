@@ -1,0 +1,435 @@
+[
+  {
+    "id": "sup_faa_avg",
+    "category": "supported",
+    "expect": "supported",
+    "claim": {
+      "text": "SFO is under a ground delay program averaging 34 min.",
+      "evidence_ids": [
+        "faa_nas:SFO:GDP:0"
+      ],
+      "confidence": "high",
+      "risk": "moderate"
+    }
+  },
+  {
+    "id": "sup_faa_max",
+    "category": "supported",
+    "expect": "supported",
+    "claim": {
+      "text": "The SFO ground delay program has maximum delays of 83 min.",
+      "evidence_ids": [
+        "faa_nas:SFO:GDP:0"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "sup_jfk_none",
+    "category": "supported",
+    "expect": "supported",
+    "claim": {
+      "text": "JFK has no active FAA program.",
+      "evidence_ids": [
+        "faa_nas:JFK:status"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "sup_engine_gdp",
+    "category": "supported",
+    "expect": "supported",
+    "claim": {
+      "text": "The rule engine reports a ground delay program at SFO averaging 34 min.",
+      "evidence_ids": [
+        "engine:JFK-SFO:2026-09-23:evening:FAA_GDP_AVG_15:1"
+      ],
+      "confidence": "high",
+      "risk": "moderate"
+    }
+  },
+  {
+    "id": "sup_summary_action",
+    "category": "supported",
+    "expect": "supported",
+    "claim": {
+      "text": "The recommended action is to monitor the trip.",
+      "evidence_ids": [
+        "assess:JFK-SFO:2026-09-23:evening:summary"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "sup_risk_equal",
+    "category": "supported",
+    "expect": "supported",
+    "claim": {
+      "text": "Overall trip risk is elevated.",
+      "evidence_ids": [
+        "assess:JFK-SFO:2026-09-23:evening:summary"
+      ],
+      "confidence": "high",
+      "risk": "moderate"
+    }
+  },
+  {
+    "id": "sup_two_sources",
+    "category": "supported",
+    "expect": "supported",
+    "claim": {
+      "text": "SFO has a ground delay program averaging 34 min and the overall trip risk is elevated.",
+      "evidence_ids": [
+        "faa_nas:SFO:GDP:0",
+        "assess:JFK-SFO:2026-09-23:evening:summary"
+      ],
+      "confidence": "high",
+      "risk": "moderate"
+    }
+  },
+  {
+    "id": "sup_route",
+    "category": "supported",
+    "expect": "supported",
+    "claim": {
+      "text": "The JFK-SFO trip in the evening carries elevated risk.",
+      "evidence_ids": [
+        "assess:JFK-SFO:2026-09-23:evening:summary"
+      ],
+      "confidence": "medium",
+      "risk": "moderate"
+    }
+  },
+  {
+    "id": "no_citation",
+    "category": "no_citation",
+    "expect": "unsupported",
+    "claim": {
+      "text": "SFO is badly delayed this evening.",
+      "evidence_ids": [],
+      "confidence": "medium"
+    }
+  },
+  {
+    "id": "fabricated_faa_id",
+    "category": "fabricated_citation",
+    "expect": "unsupported",
+    "claim": {
+      "text": "SFO is delayed 34 min.",
+      "evidence_ids": [
+        "faa_nas:SFO:GDP:999"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "fabricated_news_id",
+    "category": "fabricated_citation",
+    "expect": "unsupported",
+    "claim": {
+      "text": "A news report says SFO is delayed.",
+      "evidence_ids": [
+        "news:deadbeef"
+      ],
+      "confidence": "medium"
+    }
+  },
+  {
+    "id": "untrusted_only",
+    "category": "untrusted_only",
+    "expect": "unsupported",
+    "claim": {
+      "text": "A news headline says SFO is delayed 34 min.",
+      "evidence_ids": [
+        "news:0badc0de"
+      ],
+      "confidence": "medium"
+    }
+  },
+  {
+    "id": "wrong_number_avg",
+    "category": "wrong_number",
+    "expect": "contradicted",
+    "claim": {
+      "text": "The average delay at SFO is 90 min.",
+      "evidence_ids": [
+        "faa_nas:SFO:GDP:0"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "wrong_number_max",
+    "category": "wrong_number",
+    "expect": "contradicted",
+    "claim": {
+      "text": "The maximum delay at SFO is 20 min.",
+      "evidence_ids": [
+        "faa_nas:SFO:GDP:0"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "wrong_number_mixed",
+    "category": "wrong_number",
+    "expect": "contradicted",
+    "claim": {
+      "text": "SFO delays average 34 min with a maximum of 60 min.",
+      "evidence_ids": [
+        "faa_nas:SFO:GDP:0"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "wrong_airport_oak",
+    "category": "wrong_airport",
+    "expect": "unsupported",
+    "claim": {
+      "text": "OAK departures are delayed 34 min.",
+      "evidence_ids": [
+        "faa_nas:SFO:GDP:0"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "wrong_airport_lax",
+    "category": "wrong_airport",
+    "expect": "unsupported",
+    "claim": {
+      "text": "LAX has a ground delay program averaging 34 min.",
+      "evidence_ids": [
+        "faa_nas:SFO:GDP:0"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "wrong_airport_jfk",
+    "category": "wrong_airport",
+    "expect": "unsupported",
+    "claim": {
+      "text": "JFK is affected by the SFO ground delay program.",
+      "evidence_ids": [
+        "faa_nas:SFO:GDP:0"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "downplay_low",
+    "category": "risk_downplayed",
+    "expect": "contradicted",
+    "claim": {
+      "text": "Overall trip risk is low.",
+      "evidence_ids": [
+        "assess:JFK-SFO:2026-09-23:evening:summary"
+      ],
+      "confidence": "high",
+      "risk": "low"
+    }
+  },
+  {
+    "id": "downplay_little_risk",
+    "category": "risk_downplayed",
+    "expect": "contradicted",
+    "claim": {
+      "text": "This is a low-risk trip and the flight should be easy.",
+      "evidence_ids": [
+        "assess:JFK-SFO:2026-09-23:evening:summary"
+      ],
+      "confidence": "high",
+      "risk": "low"
+    }
+  },
+  {
+    "id": "cautious_high",
+    "category": "risk_more_cautious",
+    "expect": "supported",
+    "claim": {
+      "text": "Overall risk should be treated as high.",
+      "evidence_ids": [
+        "assess:JFK-SFO:2026-09-23:evening:summary"
+      ],
+      "confidence": "medium",
+      "risk": "high"
+    }
+  },
+  {
+    "id": "cautious_high_2",
+    "category": "risk_more_cautious",
+    "expect": "supported",
+    "claim": {
+      "text": "Treat this evening trip as a serious risk.",
+      "evidence_ids": [
+        "assess:JFK-SFO:2026-09-23:evening:summary"
+      ],
+      "confidence": "medium",
+      "risk": "high"
+    }
+  },
+  {
+    "id": "supported_alternative",
+    "category": "supported",
+    "expect": "supported",
+    "claim": {
+      "text": "Rerouting to EWR keeps the same destination delay program.",
+      "evidence_ids": [
+        "assess:JFK-SFO:2026-09-23:evening:alternative:1"
+      ],
+      "confidence": "medium"
+    }
+  },
+  {
+    "id": "fabricated_alternative",
+    "category": "fabricated_citation",
+    "expect": "unsupported",
+    "claim": {
+      "text": "An Amtrak alternative is available.",
+      "evidence_ids": [
+        "assess:JFK-SFO:2026-09-23:evening:alternative:9"
+      ],
+      "confidence": "medium"
+    }
+  },
+  {
+    "id": "mixed_trusted_untrusted",
+    "category": "mixed_trust",
+    "expect": "supported",
+    "claim": {
+      "text": "SFO average delay is 34 min.",
+      "evidence_ids": [
+        "faa_nas:SFO:GDP:0",
+        "news:0badc0de"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "number_only_untrusted",
+    "category": "untrusted_only",
+    "expect": "unsupported",
+    "claim": {
+      "text": "SFO is delayed 90 min.",
+      "evidence_ids": [
+        "news:0badc0de"
+      ],
+      "confidence": "medium"
+    }
+  },
+  {
+    "id": "failed_tool_evidence",
+    "category": "failed_tool",
+    "expect": "unsupported",
+    "claim": {
+      "text": "SFO average delay is 34 min.",
+      "evidence_ids": [
+        "failed:tool:0"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "non_summary_downplay",
+    "category": "risk_downplayed",
+    "expect": "contradicted",
+    "claim": {
+      "text": "The FAA program is low risk.",
+      "evidence_ids": [
+        "engine:JFK-SFO:2026-09-23:evening:FAA_GDP_AVG_15:1"
+      ],
+      "confidence": "high",
+      "risk": "low"
+    }
+  },
+  {
+    "id": "uncited_summary_downplay",
+    "category": "risk_downplayed",
+    "expect": "contradicted",
+    "claim": {
+      "text": "This route is low risk.",
+      "evidence_ids": [
+        "engine:JFK-SFO:custom:finding"
+      ],
+      "confidence": "high",
+      "risk": "low"
+    }
+  },
+  {
+    "id": "hyphenated_numbers",
+    "category": "unit_aware",
+    "expect": "supported",
+    "claim": {
+      "text": "The SFO maximum delay is 83-minute.",
+      "evidence_ids": [
+        "faa_nas:SFO:GDP:0"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "converted_hours",
+    "category": "unit_aware",
+    "expect": "supported",
+    "claim": {
+      "text": "The SFO maximum delay is 1 h 23 min.",
+      "evidence_ids": [
+        "faa_nas:SFO:GDP:0"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "coordinate_numbers_ignored",
+    "category": "numbers_in_metadata",
+    "expect": "unsupported",
+    "claim": {
+      "text": "SFO is 37.62 km away.",
+      "evidence_ids": [
+        "coords:place"
+      ],
+      "confidence": "medium"
+    }
+  },
+  {
+    "id": "common_word_not_airport",
+    "category": "place_stoplist",
+    "expect": "supported",
+    "claim": {
+      "text": "This USA trip carries elevated risk.",
+      "evidence_ids": [
+        "assess:JFK-SFO:2026-09-23:evening:summary"
+      ],
+      "confidence": "medium",
+      "risk": "moderate"
+    }
+  },
+  {
+    "id": "substring_code_not_place",
+    "category": "place_substring",
+    "expect": "unsupported",
+    "claim": {
+      "text": "SFO has a ground delay program averaging 34 min.",
+      "evidence_ids": [
+        "synthetic:sfoo"
+      ],
+      "confidence": "high"
+    }
+  },
+  {
+    "id": "route_less_downplay",
+    "category": "risk_downplayed",
+    "expect": "contradicted",
+    "claim": {
+      "text": "Conditions at SFO are low risk this evening.",
+      "evidence_ids": [
+        "faa_nas:SFO:GDP:0"
+      ],
+      "confidence": "high",
+      "risk": "low"
+    }
+  }
+]

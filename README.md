@@ -45,7 +45,7 @@ contract that holds the whole system together. See [`docs/INTERFACES.md`](docs/I
 | Action | Tool calling over 9+ free live data sources (FAA, NWS, aviation weather, BTS, Amtrak…), mock booking tool, optional MCP server | M3 / M4 |
 | Learn | Few-shot from historical disruption cases, user preference memory | M4 |
 | Human–AI interaction | Approval gate before any booking; escalation on unsupported claims | M4 / M1 |
-| Responsible AI | Claim–evidence verification, prompt-injection filter on news text, PII redaction, guardrail test set | M1 |
+| Responsible AI | Claim–evidence verification, two-layer prompt-injection filter on user/news text, PII redaction, deny-by-default booking gate, guardrail test set | M1 |
 
 Bonus targets: **Agent Evaluation**, **Observability** (ADK callbacks → trace logs),
 **Advanced guardrails**, optional **MCP**.
