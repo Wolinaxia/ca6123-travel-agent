@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from travel_agent.core.models import (
+    FaaClosure,
     FaaGroundDelay,
     FaaGroundStop,
     FaaNasData,
@@ -172,3 +173,28 @@ def test_faa_recorded_xml_status(monkeypatch):
         item["data"].get("active") is False and "no active faa program" in item["observation"].lower()
         for item in unaffected["evidence"]
     )
+
+
+def test_faa_ga_only_closure_keeps_no_active_program_evidence(monkeypatch):
+    raw_reason = "RWY 13/31 CLSD NON SKED GA OPERATIONS ONLY"
+    faa = FaaNasData(closures=[FaaClosure(airport="SFO", reason=raw_reason, affects_commercial=False, active=True)])
+    monkeypatch.setattr(live.faa_nas, "fetch", lambda **kwargs: _result("faa_nas", faa))
+    result = live.get_faa_airport_status("SFO")
+    _assert_shape(result)
+    ga = [item for item in result["evidence"] if item["data"].get("program") == "ga_restriction"]
+    assert len(ga) == 1
+    assert ga[0]["observation"] == "General-aviation restriction at SFO (commercial flights not affected)"
+    assert raw_reason not in ga[0]["observation"]
+    assert ga[0]["data"]["reason"] == raw_reason
+    assert any(item["data"].get("active") is False and item["observation"].startswith("No active FAA program at SFO") for item in result["evidence"])
+
+
+def test_faa_commercial_closure_is_unchanged(monkeypatch):
+    faa = FaaNasData(closures=[FaaClosure(airport="SFO", reason="RWY 28L CLSD", affects_commercial=True, active=True)])
+    monkeypatch.setattr(live.faa_nas, "fetch", lambda **kwargs: _result("faa_nas", faa))
+    result = live.get_faa_airport_status("SFO")
+    _assert_shape(result)
+    closure = [item for item in result["evidence"] if item["data"].get("program") == "closure"]
+    assert len(closure) == 1
+    assert "Airport closure at SFO" in closure[0]["observation"]
+    assert not any(item["data"].get("active") is False for item in result["evidence"])

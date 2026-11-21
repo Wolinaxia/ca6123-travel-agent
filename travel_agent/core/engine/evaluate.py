@@ -260,14 +260,45 @@ def evaluate(trip: TripRequest, inputs: SourceInputs, now: datetime, policy: Pol
         if inputs.mta and inputs.mta.ok:
             mta_legs = []
             if trip.origin_airport in {"JFK", "LGA", "EWR"}:
-                mta_legs.append("access")
+                mta_legs.append(("access", departure, departure_end))
             if trip.destination_airport in {"JFK", "LGA", "EWR"}:
-                mta_legs.append("egress")
-            for alert in inputs.mta.data or []:
-                if any(route in {"A", "E", "J", "Z"} for route in alert.affected_routes):
-                    for leg in mta_legs:
-                        _add(evidence, leg, "delay", "elevated", "MTA_DISRUPTION", "Airport transit disruption", alert.header_text, "mta", inputs.mta)
-                        levels[leg] = _max_level(levels[leg], "elevated")
+                mta_legs.append(("egress", arrival, arrival_end))
+            airport_terms = ("jfk", "howard beach", "jamaica", "sutphin", "far rockaway", "airtrain", "kennedy", "newark airport", "laguardia")
+            outside_window = 0
+            outside_examples: list[str] = []
+            not_on_branch = 0
+            branch_examples: list[str] = []
+            for leg, window_start, window_end in mta_legs:
+                active: dict[str, Any] = {}
+                for alert in inputs.mta.data or []:
+                    if not any(route in {"A", "E", "J", "Z"} for route in alert.affected_routes):
+                        continue
+                    if alert.active_periods and not any(_overlaps(start, end, window_start, window_end) for start, end in alert.active_periods):
+                        outside_window += 1
+                        if len(outside_examples) < 3:
+                            outside_examples.append(alert.header_text)
+                        continue
+                    active.setdefault(alert.header_text, alert)
+                relevant_headers = {header for header in active if any(term in header.lower() for term in airport_terms)}
+                relevant = [alert for header, alert in active.items() if header in relevant_headers]
+                if active:
+                    if relevant:
+                        detail = f"{len(active)} active service changes on A/E/J/Z, {len(relevant)} on the airport branch"
+                    else:
+                        detail = f"{len(active)} active service changes on A/E/J/Z, none on the airport branch"
+                    _add(evidence, leg, "info", "info", "MTA_SERVICE_CONTEXT", "MTA service changes", detail, "mta", inputs.mta)
+                for alert in relevant:
+                    _add(evidence, leg, "delay", "elevated", "MTA_DISRUPTION", "Airport transit disruption", alert.header_text, "mta", inputs.mta)
+                    levels[leg] = _max_level(levels[leg], "elevated")
+                if len(active) > len(relevant):
+                    not_on_branch += len(active) - len(relevant)
+                    for header in active:
+                        if len(branch_examples) < 3 and header not in relevant_headers:
+                            branch_examples.append(header)
+            if outside_window:
+                filtered.append({"source": "MTA", "count": outside_window, "reason": "MTA alert outside trip window", "examples": outside_examples})
+            if not_on_branch:
+                filtered.append({"source": "MTA", "count": not_on_branch, "reason": "MTA alert not on airport branch", "examples": branch_examples})
     else:
         filtered.append({"source": "TomTom/MTA", "reason": "source not used for this date", "examples": []})
     if 0 <= days <= 1 and inputs.amtraker:

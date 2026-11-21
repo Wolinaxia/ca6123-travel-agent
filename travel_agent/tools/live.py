@@ -375,9 +375,26 @@ def get_faa_airport_status(airport: str) -> dict:
                     url=result.url,
                 )
             )
+        commercial_evidence = len(evidence)
         for index, closure in enumerate(data.closures):
             if closure.airport != iata or not closure.active:
                 continue
+            if not closure.affects_commercial:
+                evidence.append(
+                    Evidence(
+                        id=f"faa_nas:{iata}:CLOSURE:{index}",
+                        source="faa_nas",
+                        subject=iata,
+                        observation=f"General-aviation restriction at {iata} (commercial flights not affected)",
+                        data={"program": "ga_restriction", "reason": closure.reason, "affects_commercial": False, **choice_data},
+                        valid_from=_iso(closure.start),
+                        valid_to=_iso(closure.reopen),
+                        fetched_at=fetched,
+                        url=result.url,
+                    )
+                )
+                continue
+            commercial_evidence += 1
             evidence.append(
                 Evidence(
                     id=f"faa_nas:{iata}:CLOSURE:{index}",
@@ -391,7 +408,7 @@ def get_faa_airport_status(airport: str) -> dict:
                     url=result.url,
                 )
             )
-        if not evidence:
+        if commercial_evidence == 0:
             evidence.append(
                 Evidence(
                     id=f"faa_nas:{iata}:status",

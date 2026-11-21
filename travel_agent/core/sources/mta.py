@@ -1,6 +1,6 @@
 """MTA GTFS-realtime JSON alert adapter."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 from typing import Any
 
@@ -11,7 +11,7 @@ from ..models import SourceResult, TransitAlert
 def _time(value: Any) -> datetime | None:
     if not value:
         return None
-    return datetime.fromtimestamp(int(value))
+    return datetime.fromtimestamp(int(value), tz=timezone.utc)
 
 
 def parse(payload: dict[str, Any]) -> list[TransitAlert]:
