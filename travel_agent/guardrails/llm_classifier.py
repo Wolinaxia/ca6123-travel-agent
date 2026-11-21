@@ -8,7 +8,8 @@ the rules did not flag. Everything here degrades safely:
   network call;
 * any client error, timeout or malformed answer -> ``available=False`` with a
   short reason (logged, never raised);
-* results are cached in-process by ``sha256(text)``.
+* results are cached in-process by ``sha256(text)``; only successful verdicts
+  are cached, so a transient failure is retried rather than remembered.
 
 The text is always passed inside explicit delimiters and the model is told that
 the delimited content is data, never an instruction. The prompt is fixed, so a
@@ -29,7 +30,7 @@ from typing import Any
 
 LOGGER = logging.getLogger(__name__)
 
-DEFAULT_MODEL = "gemini-2.5-flash-lite"
+DEFAULT_MODEL = "gemini-3.5-flash-lite"
 PROMPT_VERSION = "v1"
 _TIMEOUT_S = 5.0
 
@@ -46,14 +47,27 @@ _SYSTEM = (
 _SCHEMA = {
     "type": "object",
     "properties": {
-        "injection": {"type": "boolean"},
-        "reason": {"type": "string"},
+        "results": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "index": {"type": "integer"},
+                    "injection": {"type": "boolean"},
+                    "reason": {"type": "string"},
+                },
+                "required": ["index", "injection", "reason"],
+            },
+        }
     },
-    "required": ["injection", "reason"],
+    "required": ["results"],
 }
 
 _cache: dict[str, dict[str, Any]] = {}
 _cache_lock = threading.Lock()
+
+_outcomes_lock = threading.Lock()
+_outcomes: dict[str, Any] = {"answered": 0, "failed": 0, "failures": {}}
 
 
 def _model_name() -> str:
@@ -80,6 +94,40 @@ def clear_cache() -> None:
     """Drop every cached verdict (used by tests and long-running processes)."""
     with _cache_lock:
         _cache.clear()
+
+
+def reset_outcomes() -> None:
+    """Reset the process-wide classifier outcome counters (used by the evaluator)."""
+    with _outcomes_lock:
+        _outcomes["answered"] = 0
+        _outcomes["failed"] = 0
+        _outcomes["failures"] = {}
+
+
+def outcome_counts() -> dict[str, Any]:
+    """Return how many classifier verdicts were answered vs. unavailable.
+
+    ``{"answered": int, "failed": int, "failures": {reason: count}}``. Only
+    texts actually sent to the classifier (or that would have been, had a key
+    or client been available) are counted; cache hits are not.
+    """
+    with _outcomes_lock:
+        return {
+            "answered": _outcomes["answered"],
+            "failed": _outcomes["failed"],
+            "failures": dict(_outcomes["failures"]),
+        }
+
+
+def _record_outcome(verdict: dict[str, Any]) -> None:
+    with _outcomes_lock:
+        if verdict.get("available"):
+            _outcomes["answered"] += 1
+        else:
+            _outcomes["failed"] += 1
+            reason = str(verdict.get("reason") or "unknown")
+            failures = _outcomes["failures"]
+            failures[reason] = failures.get(reason, 0) + 1
 
 
 def _unavailable(reason: str) -> dict[str, Any]:
@@ -139,17 +187,22 @@ def classify_injections(texts: list[str], *, client: Any = None) -> list[dict[st
         empty = _unavailable("empty text")
         return [result if result is not None else dict(empty) for result in results]
 
+    def _give_up(verdict: dict[str, Any]) -> list[dict[str, Any]]:
+        for index, _text in pending:
+            results[index] = dict(verdict)
+            _record_outcome(verdict)
+        empty = _unavailable("empty text")
+        return [result if result is not None else dict(empty) for result in results]
+
     if client is None:
         key = _api_key()
         if not key:
-            unavailable = _unavailable("no GOOGLE_API_KEY")
-            return [result if result is not None else dict(unavailable) for result in results]
+            return _give_up(_unavailable("no GOOGLE_API_KEY"))
         try:
             client = _client_from_env(key)
         except Exception as exc:  # pragma: no cover - import/config failure
             LOGGER.warning("guardrail classifier unavailable: %s", exc)
-            unavailable = _unavailable("classifier client unavailable")
-            return [result if result is not None else dict(unavailable) for result in results]
+            return _give_up(_unavailable("classifier client unavailable"))
 
     blocks = []
     for position, (_index, text) in enumerate(pending):
@@ -177,8 +230,7 @@ def classify_injections(texts: list[str], *, client: Any = None) -> list[dict[st
         }
     except Exception as exc:
         LOGGER.warning("guardrail classifier error: %s", exc)
-        unavailable = _unavailable(f"classifier error: {type(exc).__name__}")
-        return [result if result is not None else dict(unavailable) for result in results]
+        return _give_up(_unavailable(f"classifier error: {type(exc).__name__}"))
 
     for position, (index, text) in enumerate(pending):
         entry = by_index.get(position) or by_index.get(index)
@@ -191,7 +243,9 @@ def classify_injections(texts: list[str], *, client: Any = None) -> list[dict[st
                 "injection": entry["injection"],
                 "reason": str(reason) if isinstance(reason, str) else "classified",
             }
-        _store(text, model, verdict)
+        _record_outcome(verdict)
+        if verdict["available"]:
+            _store(text, model, verdict)
         results[index] = verdict
 
     empty = _unavailable("empty text")

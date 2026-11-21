@@ -191,6 +191,52 @@ def test_eval_smoke_runs_offline(tmp_path, monkeypatch):
     assert (tmp_path / "results" / "latest.md").exists()
 
 
+def test_eval_llm_reports_answered_classifier_calls(tmp_path, monkeypatch):
+    import eval.run_eval as run_eval
+    from travel_agent.guardrails import llm_classifier
+
+    monkeypatch.setattr(run_eval, "RESULTS_DIR", tmp_path / "results")
+    monkeypatch.setenv("GOOGLE_API_KEY", "test-key")
+    monkeypatch.setattr(llm_classifier, "_client_from_env", lambda key: object())
+
+    class _Response:
+        text = json.dumps({"results": [{"index": i, "injection": False, "reason": "ok"} for i in range(500)]})
+
+    monkeypatch.setattr(llm_classifier, "_generate", lambda *args, **kwargs: _Response())
+
+    guard = run_eval.run(use_llm=True)["guardrails"]
+
+    assert guard["llm_degraded"] is False
+    assert guard["layer1_plus_2_valid"] is True
+    assert guard["classifier_failed"] == 0
+    assert guard["classifier_calls"] == guard["classifier_answered"] > 0
+
+
+def test_eval_llm_degrades_and_exits_non_zero_when_classifier_fails(tmp_path, monkeypatch):
+    import eval.run_eval as run_eval
+    from travel_agent.guardrails import llm_classifier
+
+    monkeypatch.setattr(run_eval, "RESULTS_DIR", tmp_path / "results")
+    monkeypatch.setenv("GOOGLE_API_KEY", "test-key")
+    monkeypatch.setattr(llm_classifier, "_client_from_env", lambda key: object())
+
+    def boom(*args, **kwargs):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(llm_classifier, "_generate", boom)
+
+    guard = run_eval.run(use_llm=True)["guardrails"]
+
+    assert guard["llm_degraded"] is True
+    assert guard["layer1_plus_2_valid"] is False
+    assert guard["classifier_calls"] > 0
+    assert guard["classifier_failed"] == guard["classifier_calls"]
+
+    with pytest.raises(SystemExit) as excinfo:
+        run_eval.main(["--llm"])
+    assert excinfo.value.code == 1
+
+
 # --- G1: chain callback forwarding / fail-closed / async ------------------
 
 

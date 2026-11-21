@@ -24,6 +24,7 @@ from typing import Any
 import argparse
 import os
 
+from travel_agent.guardrails import llm_classifier
 from travel_agent.guardrails.injection import detect_injection, detect_injection_rules
 from travel_agent.guardrails.pii import redact_pii
 from travel_agent.guardrails.sanitize import REMOVED_MARKER, sanitize_tool_result
@@ -92,13 +93,26 @@ def evaluate_guardrails(cases: list[dict[str, Any]], use_llm: bool = False) -> d
     pii_total = pii_passed = 0
     over_redaction = 0
 
+    classifier_answered = 0
+    classifier_failed = 0
+    classifier_failures: dict[str, int] = {}
+
     for case in cases:
         category = str(case.get("category") or "unknown")
         entry = categories.setdefault(category, {"total": 0, "passed": 0})
         entry["total"] += 1
         expect = case.get("expect")
         text = str(case.get("text") or "")
+        before = llm_classifier.outcome_counts() if use_llm else None
         blocked, detail = _guardrail_outcome(case, use_llm=use_llm)
+        if before is not None:
+            after = llm_classifier.outcome_counts()
+            classifier_answered += after["answered"] - before["answered"]
+            classifier_failed += after["failed"] - before["failed"]
+            for reason, count in after["failures"].items():
+                delta = count - before["failures"].get(reason, 0)
+                if delta:
+                    classifier_failures[reason] = classifier_failures.get(reason, 0) + delta
         passed = True
 
         if expect == "block":
@@ -166,6 +180,10 @@ def evaluate_guardrails(cases: list[dict[str, Any]], use_llm: bool = False) -> d
         "pii_cases": pii_total,
         "pii_redaction_recall": round(pii_passed / pii_total, 3) if pii_total else 0.0,
         "over_redaction_count": over_redaction,
+        "classifier_calls": classifier_answered + classifier_failed,
+        "classifier_answered": classifier_answered,
+        "classifier_failed": classifier_failed,
+        "classifier_failures": classifier_failures,
         "per_category": per_category,
         "failures": failures,
     }
@@ -289,6 +307,8 @@ def evaluate_verifier(cases: list[dict[str, Any]]) -> dict[str, Any]:
 def _write_markdown(payload: dict[str, Any], path: Path) -> None:
     guard = payload["guardrails"]
     verifier = payload["verifier"]
+    valid = guard.get("layer1_plus_2_valid", True)
+    layer2_label = "Layer 1+2" if valid else "Layer 1+2 (NOT VALID: classifier degraded)"
     lines = [
         "# Evaluation results",
         "",
@@ -301,10 +321,12 @@ def _write_markdown(payload: dict[str, Any], path: Path) -> None:
         f"- Layer 1 benign false-positive rate: {guard['layer1']['false_positive_rate']:.1%} ({guard['layer1']['benign_cases']} allow cases)",
         f"- Layer 1 PII redaction recall: {guard['layer1']['pii_redaction_recall']:.1%} ({guard['layer1']['pii_cases']} PII cases)",
         f"- Layer 1 over-redaction count: {guard['layer1']['over_redaction_count']}",
-        f"- Layer 1+2 blocked recall: {guard['layer1_plus_2']['blocked_recall']:.1%}",
-        f"- Layer 1+2 benign false-positive rate: {guard['layer1_plus_2']['false_positive_rate']:.1%}",
-        f"- Layer 1+2 PII redaction recall: {guard['layer1_plus_2']['pii_redaction_recall']:.1%}",
-        f"- Layer 1+2 over-redaction count: {guard['layer1_plus_2']['over_redaction_count']}",
+        f"- {layer2_label} blocked recall: {guard['layer1_plus_2']['blocked_recall']:.1%}",
+        f"- {layer2_label} benign false-positive rate: {guard['layer1_plus_2']['false_positive_rate']:.1%}",
+        f"- {layer2_label} PII redaction recall: {guard['layer1_plus_2']['pii_redaction_recall']:.1%}",
+        f"- {layer2_label} over-redaction count: {guard['layer1_plus_2']['over_redaction_count']}",
+        f"- Classifier calls answered: {guard.get('classifier_answered', 0)}/{guard.get('classifier_calls', 0)}",
+        f"- Classifier calls failed: {guard.get('classifier_failed', 0)}",
         f"- Note: {guard.get('llm_note')}",
         "",
         "| Category | Passed | Total | Accuracy |",
@@ -355,7 +377,9 @@ def _print_table(payload: dict[str, Any]) -> None:
     layer1 = guard["layer1"]
     layer2 = guard["layer1_plus_2"]
     verifier = payload["verifier"]
-    rows = _guardrail_rows("layer1", layer1) + _guardrail_rows("layer1+2", layer2) + [
+    valid = guard.get("layer1_plus_2_valid", True)
+    label2 = "layer1+2" if valid else "layer1+2 (NOT VALID)"
+    rows = _guardrail_rows("layer1", layer1) + _guardrail_rows(label2, layer2) + [
         ("verifier.accuracy", f"{verifier['accuracy']:.1%}"),
         (
             "failures",
@@ -365,7 +389,18 @@ def _print_table(payload: dict[str, Any]) -> None:
     width = max(len(name) for name, _ in rows)
     for name, value in rows:
         print(f"{name.ljust(width)}  {value}")
-    if guard.get("llm_note"):
+    if guard.get("llm_requested"):
+        calls = guard.get("classifier_calls", 0)
+        failed = guard.get("classifier_failed", 0)
+        if failed:
+            reasons = ", ".join(
+                f"{reason} x{count}" for reason, count in sorted(guard.get("classifier_failures", {}).items())
+            )
+            print(f"classifier DEGRADED: {failed}/{calls} calls failed (reasons: {reasons})")
+            print("layer 1+2 numbers are NOT VALID: the classifier did not answer every call")
+        elif calls:
+            print(f"classifier: {calls}/{calls} calls answered")
+    if guard.get("llm_note") and not guard.get("llm_degraded"):
         print(guard["llm_note"])
     print("\nGuardrail failures (layer 1):")
     for failure in layer1["failures"]:
@@ -397,9 +432,16 @@ def run(use_llm: bool = False) -> dict[str, Any]:
     verifier_cases = json.loads((ROOT / "verifier_cases.json").read_text(encoding="utf-8"))
     layer1 = evaluate_guardrails(guardrail_cases, use_llm=False)
     llm_available = use_llm and _classifier_key_present()
+    llm_classifier.clear_cache()
+    llm_classifier.reset_outcomes()
     layer2 = evaluate_guardrails(guardrail_cases, use_llm=llm_available)
+    calls = layer2["classifier_calls"]
+    failed = layer2["classifier_failed"]
+    degraded = bool(use_llm and failed)
     if use_llm and not llm_available:
         note = "classifier unavailable, rules only"
+    elif degraded:
+        note = f"classifier DEGRADED: {failed}/{calls} calls failed"
     elif use_llm:
         note = "classifier enabled (layer 1 + layer 2)"
     else:
@@ -408,8 +450,10 @@ def run(use_llm: bool = False) -> dict[str, Any]:
         **layer2,
         "layer1": layer1,
         "layer1_plus_2": layer2,
+        "layer1_plus_2_valid": not degraded,
         "llm_requested": use_llm,
         "llm_available": llm_available,
+        "llm_degraded": degraded,
         "llm_note": note,
     }
     payload = {
@@ -432,7 +476,13 @@ def main(argv: list[str] | None = None) -> dict[str, Any]:
         help="also use the Gemini classifier (needs GOOGLE_API_KEY; otherwise rules only)",
     )
     args = parser.parse_args(argv)
-    return run(use_llm=args.llm)
+    payload = run(use_llm=args.llm)
+    guard = payload["guardrails"]
+    calls = guard.get("classifier_calls", 0)
+    failed = guard.get("classifier_failed", 0)
+    if args.llm and calls and failed / calls > 0.1:
+        raise SystemExit(1)
+    return payload
 
 
 if __name__ == "__main__":

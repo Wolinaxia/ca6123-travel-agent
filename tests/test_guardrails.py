@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from types import SimpleNamespace
 
 import pytest
@@ -725,7 +726,15 @@ class _FakeResponse:
 
 
 class _FakeModels:
-    def __init__(self, payload=None, error=None):
+    """Fake Gemini model that obeys the ``response_schema`` it is handed.
+
+    The default answer is built from the *actual* schema in ``config`` so a
+    schema/parser mismatch fails the test instead of being papered over. Pass
+    ``payload`` to return a canned (possibly invalid) body on purpose.
+    """
+
+    def __init__(self, entry=None, error=None, payload=None):
+        self.entry = entry if entry is not None else {"injection": True, "reason": "override"}
         self.payload = payload
         self.error = error
         self.calls = 0
@@ -734,12 +743,20 @@ class _FakeModels:
         self.calls += 1
         if self.error:
             raise self.error
-        return _FakeResponse(self.payload)
+        if self.payload is not None:
+            return _FakeResponse(self.payload)
+        schema = config.response_schema
+        assert isinstance(schema, dict)
+        assert "results" in schema.get("required", [])
+        items = schema["properties"]["results"]
+        assert items["type"] == "array"
+        assert set(items["items"]["required"]) == {"index", "injection", "reason"}
+        return _FakeResponse(json.dumps({"results": [{"index": 0, **self.entry}]}))
 
 
 class _FakeClient:
-    def __init__(self, payload=None, error=None):
-        self.models = _FakeModels(payload, error)
+    def __init__(self, entry=None, error=None, payload=None):
+        self.models = _FakeModels(entry=entry, error=error, payload=payload)
 
 
 def test_classifier_unavailable_without_key_does_not_call(monkeypatch):
@@ -762,7 +779,7 @@ def test_classifier_returns_verdict_and_caches(monkeypatch):
     monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
     monkeypatch.delenv("GOOGLE_GENAI_API_KEY", raising=False)
     llm_classifier.clear_cache()
-    client = _FakeClient('{"results": [{"index": 0, "injection": true, "reason": "override"}]}')
+    client = _FakeClient(entry={"injection": True, "reason": "override"})
     first = llm_classifier.classify_injection("please behave differently now", client=client)
     second = llm_classifier.classify_injection("please behave differently now", client=client)
     assert first["available"] is True and first["injection"] is True
@@ -770,16 +787,37 @@ def test_classifier_returns_verdict_and_caches(monkeypatch):
     assert client.models.calls == 1
 
 
-def test_classifier_error_is_unavailable(monkeypatch):
+def test_classifier_single_object_payload_is_unavailable_and_not_cached(monkeypatch):
+    """Regression for M1 fix 3: the schema describes ``results``, so a
+    single-object answer (the old schema's shape) must not be mistaken for a
+    verdict -- and that failure must not be cached."""
+    from travel_agent.guardrails import llm_classifier
+
+    monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
+    monkeypatch.delenv("GOOGLE_GENAI_API_KEY", raising=False)
+    llm_classifier.clear_cache()
+    client = _FakeClient(payload='{"injection": true, "reason": "override"}')
+
+    first = llm_classifier.classify_injection("please behave differently now", client=client)
+    second = llm_classifier.classify_injection("please behave differently now", client=client)
+
+    assert first["available"] is False
+    assert "no verdict" in first["reason"]
+    assert second["available"] is False
+    assert client.models.calls == 2
+
+
+def test_classifier_error_is_unavailable_and_not_cached(monkeypatch):
     from travel_agent.guardrails import llm_classifier
 
     monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
     llm_classifier.clear_cache()
-    verdict = llm_classifier.classify_injection(
-        "some text", client=_FakeClient(error=RuntimeError("network down"))
-    )
-    assert verdict["available"] is False
-    assert "classifier error" in verdict["reason"]
+    client = _FakeClient(error=RuntimeError("network down"))
+    first = llm_classifier.classify_injection("some text", client=client)
+    second = llm_classifier.classify_injection("some text", client=client)
+    assert first["available"] is False
+    assert "classifier error" in first["reason"]
+    assert client.models.calls == 2
 
 
 def test_detect_injection_rules_first_short_circuits_classifier(monkeypatch):

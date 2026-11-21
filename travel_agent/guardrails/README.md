@@ -47,7 +47,7 @@ words, so `paypal_lookup` and `display_hold_music` are not gated while
 Explicit `GATED_TOOLS` entries always need an exact-args approval in
 `approved_actions`; approvals are single-use. Layer 2 is off unless
 `GUARDRAIL_LLM=1` (or `use_llm=True`); set `GUARDRAIL_MODEL` to override
-`gemini-2.5-flash-lite`.
+`gemini-3.5-flash-lite`.
 
 ## State keys
 

@@ -84,7 +84,7 @@ def verify_claims_tool(claims: list[dict], tool_context: ToolContext) -> dict:
     return result
 
 
-def build_verifier_agent(model: str = "gemini-2.5-flash-lite") -> LlmAgent:
+def build_verifier_agent(model: str = "gemini-3.5-flash-lite") -> LlmAgent:
     """Build the ``verifier`` ``LlmAgent`` (no API key or network required)."""
     return LlmAgent(
         name="verifier",

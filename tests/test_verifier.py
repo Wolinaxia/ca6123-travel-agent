@@ -213,7 +213,7 @@ def test_build_verifier_agent_without_api_key(monkeypatch):
     monkeypatch.delenv("GOOGLE_GENAI_API_KEY", raising=False)
     agent = build_verifier_agent()
     assert agent.name == "verifier"
-    assert agent.model == "gemini-2.5-flash-lite"
+    assert agent.model == "gemini-3.5-flash-lite"
     assert agent.tools
 
 

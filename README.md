@@ -92,7 +92,7 @@ In Colab: put `GOOGLE_API_KEY` in Colab Secrets (same as the course notebooks).
 ## Rules
 
 - **Never commit API keys.** This repo is public. `.env` is git-ignored.
-- Use `gemini-2.5-flash-lite` while developing — our token budget is shared and limited.
+- Use `gemini-3.5-flash-lite` while developing — our token budget is shared and limited.
 - One branch per task, open a PR, at least one teammate reviews. See [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## Acknowledgements
