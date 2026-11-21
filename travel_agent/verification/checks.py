@@ -63,13 +63,6 @@ _STOPLIST = {
     "ANY", "OUR", "OWN", "OFF", "ONTO", "PER", "VIA", "WAS", "WHO", "WHY", "HOW",
     "ITS", "IT'S", "DID", "GET", "GOT", "LET", "SET", "USE", "FAR", "LOW", "AIR",
 }
-_COMMON_WORDS = {
-    "oak", "sun", "hot", "sat", "and", "the", "for", "you", "are", "was", "has",
-    "can", "may", "now", "out", "top", "new", "old", "all", "any", "our", "own",
-    "off", "per", "via", "who", "why", "how", "its", "did", "get", "got", "let",
-    "set", "use", "far", "low", "air", "sea", "car", "bus", "tax", "fee", "bag",
-}
-
 _NUMBER_WORDS = {
     "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7,
     "eight": 8, "nine": 9, "ten": 10, "eleven": 11, "twelve": 12, "thirteen": 13,
@@ -320,12 +313,11 @@ def _claim_places(text: str) -> list[str]:
         upper = token.upper()
         if upper in _STOPLIST:
             continue
-        if token.isupper():
-            if airport_by_iata(upper) is not None:
-                places.append(upper)
-        elif token.islower() and token not in _COMMON_WORDS:
-            if airport_by_iata(upper) is not None:
-                places.append(upper)
+        # Only all-caps tokens count as airport codes. Lowercase matching was
+        # dropped: ~66 ordinary English words (day, art, bed, row, pit, ...)
+        # are also IATA codes, so correct claims got flagged.
+        if token.isupper() and airport_by_iata(upper) is not None:
+            places.append(upper)
     return list(dict.fromkeys(places))
 
 
