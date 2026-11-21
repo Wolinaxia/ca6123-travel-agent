@@ -1,0 +1,1 @@
+{"status": 200, "body": "{\n    \"@context\": {\n        \"@version\": \"1.1\"\n    },\n    \"type\": \"FeatureCollection\",\n    \"features\": [],\n    \"title\": \"Current watches, warnings, and advisories for 39.487235 N, 76.244418 W\",\n    \"updated\": \"2026-09-24T07:15:00+00:00\"\n}", "url": "https://api.weather.gov/alerts/active?point=39.487235%2C-76.244418"}
