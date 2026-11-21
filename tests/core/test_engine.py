@@ -7,7 +7,7 @@ from travel_agent.core.engine.evaluate import evaluate
 from travel_agent.core.engine.models import Policy, SourceInputs, TripRequest
 from travel_agent.core.engine.weather_rules import open_meteo_level
 from travel_agent.core.engine.parse import parse
-from travel_agent.core.models import SourceResult, FaaGroundDelay, FaaNasData, TrafficIncident, NewsItem, TrainStatus
+from travel_agent.core.models import SourceResult, FaaGroundDelay, FaaNasData, TrafficIncident, NewsItem, TrainStatus, TransitAlert
 from travel_agent.core.sources.faa_nas import parse as parse_faa
 from travel_agent.core.sources.aviation_wx import parse as parse_wx
 
@@ -25,6 +25,52 @@ def _result(source, data, url="snapshot://fixture"):
 
 def _trip(days=1, window="whole_day"):
     return TripRequest(origin_text="New York", destination_text="San Francisco", origin_city="New York", destination_city="San Francisco", departure_date=date(2026, 9, 23) + timedelta(days=days), departure_window=window, origin_airport="JFK", destination_airport="SFO", origin_latlon=(40.7128, -74.006), destination_latlon=(37.7749, -122.4194), origin_timezone="America/New_York", destination_timezone="America/Los_Angeles")
+
+
+def _prior_trip(day=date(2026, 11, 21)):
+    return TripRequest(
+        origin_text="New York",
+        destination_text="Boston",
+        origin_city="New York",
+        destination_city="Boston",
+        departure_date=day,
+        departure_window="evening",
+        origin_airport="JFK",
+        destination_airport="BOS",
+        origin_latlon=(40.6413, -73.7781),
+        destination_latlon=(42.3656, -71.0096),
+        origin_timezone="America/New_York",
+        destination_timezone="America/New_York",
+    )
+
+
+def test_bts_prior_is_info_and_does_not_raise_level():
+    assessment = evaluate(_prior_trip(), SourceInputs(), datetime(2026, 11, 21, 12, tzinfo=timezone.utc))
+    bts = [item for item in assessment.evidence if item.rule_id == "BTS_BASE_CAP"]
+    assert bts
+    assert bts[0].level == "info"
+    assert bts[0].category == "delay"
+    assert "Departure delay" in bts[0].detail
+    assert assessment.level == "low"
+
+
+def test_holiday_peak_prior_is_info_and_does_not_raise_level():
+    assessment = evaluate(_prior_trip(date(2026, 11, 25)), SourceInputs(), datetime(2026, 11, 25, 12, tzinfo=timezone.utc))
+    peak = [item for item in assessment.evidence if item.rule_id == "HOLIDAY_PEAK"]
+    assert peak
+    assert peak[0].level == "info"
+    assert peak[0].category == "delay"
+    assert assessment.level == "low"
+
+
+def test_prior_amplifier_note_does_not_raise_live_level():
+    faa = FaaNasData(ground_delays=[FaaGroundDelay(airport="BOS", reason="capacity", avg_minutes=20, max_minutes=40)])
+    assessment = evaluate(_prior_trip(), SourceInputs(faa=_result("faa", faa)), datetime(2026, 11, 21, 12, tzinfo=timezone.utc))
+    amplifier = [item for item in assessment.evidence if "make recovery slower" in item.detail]
+    assert len(amplifier) == 1
+    assert amplifier[0].level == "info"
+    assert amplifier[0].leg == "flight"
+    assert assessment.level == "elevated"
 
 
 def test_scenario_a_destination_gdp_drives_flight():
@@ -164,3 +210,83 @@ def test_faa_gdp_boundaries(average, expected):
 @pytest.mark.parametrize("code,snowfall,expected", [(0, 0, "low"), (95, 0, "elevated"), (0, 5, "high")])
 def test_open_meteo_boundaries(code, snowfall, expected):
     assert open_meteo_level({"weather_code": [code], "snowfall_sum": [snowfall]}) == expected
+
+
+def _mta_trip(window="whole_day"):
+    return TripRequest(
+        origin_text="New York",
+        destination_text="Boston",
+        origin_city="New York",
+        destination_city="Boston",
+        departure_date=date(2026, 9, 23),
+        departure_window=window,
+        origin_airport="JFK",
+        destination_airport="BOS",
+        origin_latlon=(40.6413, -73.7781),
+        destination_latlon=(42.3656, -71.0096),
+        origin_timezone="America/New_York",
+        destination_timezone="America/New_York",
+    )
+
+
+def _mta_alert(header, start=None, end=None, routes=("A",)):
+    periods = [(start, end)] if start is not None or end is not None else []
+    return TransitAlert(header_text=header, affected_routes=list(routes), active_periods=periods)
+
+
+def test_mta_future_planned_work_outside_window_is_filtered():
+    alert = _mta_alert(
+        "No [A] between 168 St and 207 St",
+        datetime(2026, 9, 25, 12, tzinfo=timezone.utc),
+        datetime(2026, 9, 25, 18, tzinfo=timezone.utc),
+    )
+    assessment = evaluate(_mta_trip("evening"), SourceInputs(mta=_result("mta", [alert])), NOW)
+    assert not [item for item in assessment.evidence if item.source == "mta"]
+    assert any(reason.get("reason") == "MTA alert outside trip window" for reason in assessment.filtered if isinstance(reason, dict))
+    assert assessment.legs[0].level == "low"
+
+
+def test_mta_duplicate_headers_are_deduped():
+    alerts = [_mta_alert("No [A] trains to Howard Beach-JFK Airport") for _ in range(10)]
+    assessment = evaluate(_mta_trip(), SourceInputs(mta=_result("mta", alerts)), NOW)
+    elevated = [item for item in assessment.evidence if item.source == "mta" and item.level == "elevated"]
+    assert len(elevated) == 1
+
+
+def test_mta_non_airport_work_is_info_and_does_not_raise_leg():
+    alert = _mta_alert("No [A] between 168 St and 207 St")
+    assessment = evaluate(_mta_trip(), SourceInputs(mta=_result("mta", [alert])), NOW)
+    items = [item for item in assessment.evidence if item.source == "mta"]
+    assert len(items) == 1
+    assert items[0].level == "info"
+    assert "none on the airport branch" in items[0].detail
+    assert assessment.legs[0].level == "low"
+    assert any(reason.get("reason") == "MTA alert not on airport branch" for reason in assessment.filtered if isinstance(reason, dict))
+
+
+def test_mta_airport_branch_work_is_elevated():
+    alerts = [
+        _mta_alert("No [A] trains to Howard Beach-JFK Airport"),
+        _mta_alert("No [A] between 168 St and 207 St"),
+    ]
+    assessment = evaluate(_mta_trip(), SourceInputs(mta=_result("mta", alerts)), NOW)
+    elevated = [item for item in assessment.evidence if item.source == "mta" and item.level == "elevated"]
+    assert len(elevated) == 1
+    assert "Howard Beach" in elevated[0].detail
+    info = [item for item in assessment.evidence if item.source == "mta" and item.level == "info"]
+    assert len(info) == 1
+    assert "1 on the airport branch" in info[0].detail
+    assert assessment.legs[0].level == "elevated"
+
+
+def test_mta_active_period_without_bounds_counts_as_active():
+    alerts = [_mta_alert("No [A] trains to Howard Beach-JFK Airport", None, None)] * 2
+    alerts.append(_mta_alert("No [A] between 168 St and 207 St", None, None))
+    assert all(alert.active_periods == [] for alert in alerts)
+    assessment = evaluate(_mta_trip(), SourceInputs(mta=_result("mta", alerts)), NOW)
+    elevated = [item for item in assessment.evidence if item.source == "mta" and item.level == "elevated"]
+    info = [item for item in assessment.evidence if item.source == "mta" and item.level == "info"]
+    assert len(elevated) == 1
+    assert len(info) == 1
+    assert info[0].detail.startswith("2 active service changes")
+    assert assessment.legs[0].level == "elevated"

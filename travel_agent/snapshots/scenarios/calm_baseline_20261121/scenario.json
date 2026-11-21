@@ -1,0 +1,7 @@
+{
+  "name": "calm_baseline_20261121",
+  "description": "Calm baseline (no FAA programs in NE corridor; SFO coastal flood warning; light rain). Negative control.",
+  "now": "2026-11-21T07:18:58.336764Z",
+  "recorded_at": "2026-11-21T07:18:58.336764Z",
+  "default_query": "New York to Boston today evening"
+}

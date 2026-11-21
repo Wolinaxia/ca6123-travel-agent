@@ -187,6 +187,12 @@ def test_mta_parser():
     assert result.affected_routes == ["A"]
 
 
+def test_mta_timestamps_are_utc():
+    assert mta._time(1) == datetime(1970, 1, 1, 0, 0, 1, tzinfo=timezone.utc)
+    assert mta._time(1700000000) == datetime(2023, 11, 14, 22, 13, 20, tzinfo=timezone.utc)
+    assert mta._time(None) is None
+
+
 def test_key_redaction():
     assert "secret" not in redact_url("https://example.test/path?key=secret&x=1")
     assert "key=REDACTED" in redact_url("https://example.test/path?key=secret&x=1")

@@ -260,14 +260,45 @@ def evaluate(trip: TripRequest, inputs: SourceInputs, now: datetime, policy: Pol
         if inputs.mta and inputs.mta.ok:
             mta_legs = []
             if trip.origin_airport in {"JFK", "LGA", "EWR"}:
-                mta_legs.append("access")
+                mta_legs.append(("access", departure, departure_end))
             if trip.destination_airport in {"JFK", "LGA", "EWR"}:
-                mta_legs.append("egress")
-            for alert in inputs.mta.data or []:
-                if any(route in {"A", "E", "J", "Z"} for route in alert.affected_routes):
-                    for leg in mta_legs:
-                        _add(evidence, leg, "delay", "elevated", "MTA_DISRUPTION", "Airport transit disruption", alert.header_text, "mta", inputs.mta)
-                        levels[leg] = _max_level(levels[leg], "elevated")
+                mta_legs.append(("egress", arrival, arrival_end))
+            airport_terms = ("jfk", "howard beach", "jamaica", "sutphin", "far rockaway", "airtrain", "kennedy", "newark airport", "laguardia")
+            outside_window = 0
+            outside_examples: list[str] = []
+            not_on_branch = 0
+            branch_examples: list[str] = []
+            for leg, window_start, window_end in mta_legs:
+                active: dict[str, Any] = {}
+                for alert in inputs.mta.data or []:
+                    if not any(route in {"A", "E", "J", "Z"} for route in alert.affected_routes):
+                        continue
+                    if alert.active_periods and not any(_overlaps(start, end, window_start, window_end) for start, end in alert.active_periods):
+                        outside_window += 1
+                        if len(outside_examples) < 3:
+                            outside_examples.append(alert.header_text)
+                        continue
+                    active.setdefault(alert.header_text, alert)
+                relevant_headers = {header for header in active if any(term in header.lower() for term in airport_terms)}
+                relevant = [alert for header, alert in active.items() if header in relevant_headers]
+                if active:
+                    if relevant:
+                        detail = f"{len(active)} active service changes on A/E/J/Z, {len(relevant)} on the airport branch"
+                    else:
+                        detail = f"{len(active)} active service changes on A/E/J/Z, none on the airport branch"
+                    _add(evidence, leg, "info", "info", "MTA_SERVICE_CONTEXT", "MTA service changes", detail, "mta", inputs.mta)
+                for alert in relevant:
+                    _add(evidence, leg, "delay", "elevated", "MTA_DISRUPTION", "Airport transit disruption", alert.header_text, "mta", inputs.mta)
+                    levels[leg] = _max_level(levels[leg], "elevated")
+                if len(active) > len(relevant):
+                    not_on_branch += len(active) - len(relevant)
+                    for header in active:
+                        if len(branch_examples) < 3 and header not in relevant_headers:
+                            branch_examples.append(header)
+            if outside_window:
+                filtered.append({"source": "MTA", "count": outside_window, "reason": "MTA alert outside trip window", "examples": outside_examples})
+            if not_on_branch:
+                filtered.append({"source": "MTA", "count": not_on_branch, "reason": "MTA alert not on airport branch", "examples": branch_examples})
     else:
         filtered.append({"source": "TomTom/MTA", "reason": "source not used for this date", "examples": []})
     if 0 <= days <= 1 and inputs.amtraker:
@@ -282,12 +313,20 @@ def evaluate(trip: TripRequest, inputs: SourceInputs, now: datetime, policy: Pol
     if inputs.faa and not inputs.faa.ok:
         _add(evidence, "flight", "info", "info", "SOURCE_UNAVAILABLE", "faa unavailable", inputs.faa.error or "source failed", "faa", inputs.faa)
     base = route_base_rate(trip.origin_airport, trip.destination_airport, trip.departure_date.month) if trip.origin_airport and trip.destination_airport else None
-    if base and (base.get("dep_del15", 0) >= policy.bts_delay_threshold or base.get("cancel_rate", 0) >= policy.bts_cancel_threshold):
-        _add(evidence, "flight", "delay", "elevated", "BTS_BASE_CAP", "Historical route disruption rate", f"Departure delay {base.get('dep_del15', 0):.1%} ({base.get('basis', 'monthly')})", "bts")
-        levels["flight"] = _max_level(levels["flight"], "elevated")
-    if is_peak_travel(trip.departure_date):
-        _add(evidence, "flight", "delay", "elevated", "HOLIDAY_PEAK", "Peak travel window", str(trip.departure_date), "holidays")
-        levels["flight"] = _max_level(levels["flight"], "elevated")
+    bts_applies = bool(base and (base.get("dep_del15", 0) >= policy.bts_delay_threshold or base.get("cancel_rate", 0) >= policy.bts_cancel_threshold))
+    if bts_applies:
+        _add(evidence, "flight", "delay", "info", "BTS_BASE_CAP", "Historical route disruption rate", f"Departure delay {base.get('dep_del15', 0):.1%} ({base.get('basis', 'monthly')})", "bts")
+    peak_applies = is_peak_travel(trip.departure_date)
+    if peak_applies:
+        _add(evidence, "flight", "delay", "info", "HOLIDAY_PEAK", "Peak travel window", str(trip.departure_date), "holidays")
+    live_flight_elevated = any(
+        item.leg == "flight" and item.level != "info" and LEVELS[item.level] >= LEVELS["elevated"]
+        for item in evidence
+        if item.rule_id not in {"BTS_BASE_CAP", "HOLIDAY_PEAK"}
+    )
+    if live_flight_elevated and (bts_applies or peak_applies):
+        rule = "BTS_BASE_CAP" if bts_applies else "HOLIDAY_PEAK"
+        _add(evidence, "flight", "delay", "info", rule, "Background priors", "Background priors (historical rate / holiday peak) make recovery slower", "bts" if bts_applies else "holidays")
     for leg_name in levels:
         leg_evidence = [item for item in evidence if item.leg == leg_name and item.level != "info"]
         levels[leg_name] = max((item.level for item in leg_evidence), key=lambda value: LEVELS[value], default="low")
