@@ -8,3 +8,5 @@ logs/
 travel_agent/data/raw/
 *.zip
 .DS_Store
+
+eval/results/*.json

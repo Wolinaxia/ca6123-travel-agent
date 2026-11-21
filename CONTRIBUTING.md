@@ -11,4 +11,4 @@ Conventions
 - Docstrings on every tool function: ADK uses them to tell the model what the tool does.
 - Comments explain **why**, not what. The code is graded on clarity.
 - No API keys in code, notebooks, or outputs. Clear notebook outputs that print keys before committing.
-- Use `gemini-2.5-flash-lite` while developing.
+- Use `gemini-3.5-flash-lite` while developing.

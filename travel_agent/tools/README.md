@@ -90,8 +90,9 @@ Third-party text is data, not instructions:
   headline lives in `data.text` with `data.untrusted=True`, and the publisher in
   `data.publisher`.
 - `assess_trip_risk`: TomTom and MTA details are operator-written free text, so
-  the observation is a fixed template built only from rule title/leg/level. The
-  raw detail moves to `data.text` with `data.untrusted=True`. NWS and FAA text
-  may stay in the observation.
+  the observation is a fixed template built only from the rule category/leg/level.
+  The raw detail moves **only** to `data.text` with `data.untrusted=True`; it is
+  not duplicated into `data.title`, `data.detail` or the observation. NWS and FAA
+  text may stay in the observation.
 - NWS adapter errors use short fixed strings and never echo remote payloads.
 
