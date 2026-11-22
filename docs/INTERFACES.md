@@ -87,3 +87,17 @@ are wired (single callables, lists and chains are understood).
 Guardrail events are appended to `ctx.state["guardrail_events"]` as
 `{"kind", "decision", "reasons"}`; this key is for diagnostics only and is not part of
 the Verifier contract.
+
+## Orchestrator state keys (M2)
+
+Written by `agents.planner.plan_request_tool` at the start of every user turn.
+Specialists read their sub-task from `plan` and the resolved trip from
+`trip_goal`; they should not re-parse the user's text.
+
+| Key | Type | Meaning |
+|---|---|---|
+| `intent` | `"assess_trip" \| "plan_trip" \| "rebook" \| "out_of_scope"` | Routed intent for this turn. |
+| `trip_goal` | dict (`TripGoal`) | `origin`/`destination` (city), `origin_airport`/`destination_airport` (IATA), `departure_date` (ISO, origin local), `departure_window` (`morning`/`afternoon`/`evening`/`whole_day`), `arrive_by` (ISO datetime with destination offset, or null), `days_ahead` (int, use it to pick live vs forecast sources), `flight_number`, `constraints` (list of user preferences), `missing` (slots still needed), `notes`, `classified_by` (`llm`/`rules`). |
+| `plan` | `list[{"id", "agent", "goal", "depends_on", "parallel_group", "condition"}]` | Ordered sub-tasks. `agent` is one of `flight_airport`, `weather`, `alternatives`, `verifier`, `synthesizer`, `human_approval`, `clarify`. Tasks sharing a `parallel_group` have no dependency on each other. A non-null `condition` means the step may be skipped (e.g. alternatives for `assess_trip` only when some claim has moderate/high risk). |
+
+Specialist `AgentResult.agent` values must use the same names as `plan[*].agent`.
