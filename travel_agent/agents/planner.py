@@ -137,6 +137,29 @@ def _resolve_place(phrase: Optional[str]) -> tuple[Optional[str], Optional[str],
     return city, airport, timezone, error
 
 
+def _own_airport(phrase: Optional[str], chosen: Optional[str]) -> Optional[str]:
+    """Correct the metro pick when the user named a city with its own airport.
+
+    The rule engine maps a city to the busiest airport pair of its *metro*
+    area. That is right for "Chicago" (ORD vs MDW) but wrong for "Newark", which
+    sits inside the New York metro and would become JFK. So: if the chosen
+    airport is not in the named city, and the named city has exactly one
+    airport of its own, use that one. ("Dallas" keeps DFW, whose municipality
+    is "Dallas-Fort Worth".)
+    """
+    from travel_agent.core.reference import airports
+
+    if not phrase or not chosen or airports.get(phrase.upper()):
+        return None  # explicit IATA codes are already honoured by build_trip
+    name = phrase.strip().lower()
+    chosen_city = str((airports.get(chosen) or {}).get("municipality") or "").lower()
+    if name in chosen_city:
+        return None
+    own = [a for a in airports._load()  # offline reference table, read-only
+           if a.get("municipality", "").lower() == name and a.get("iata")]
+    return str(own[0]["iata"]) if len(own) == 1 else None
+
+
 def ground(result: IntentResult, request: str, now: datetime) -> TripGoal:
     """Turn the classifier's raw phrases into a checked ``TripGoal``."""
     from travel_agent.core.engine.parse import build_trip
@@ -163,7 +186,8 @@ def ground(result: IntentResult, request: str, now: datetime) -> TripGoal:
 
     # Deadline: day phrase resolved in the destination time zone, because
     # "be in SF by 6pm" means 6pm in San Francisco.
-    if result.deadline_text:
+    # (skipped when the destination is unknown: its time zone would be a guess)
+    if result.deadline_text and dest_city and not dest_error:
         deadline_day, _ = _resolve_day(result.deadline_text, dest_tz, now)
         deadline_day = deadline_day or _resolve_day(result.date_text, origin_tz, now)[0]
         if deadline_day is None:
@@ -200,7 +224,9 @@ def ground(result: IntentResult, request: str, now: datetime) -> TripGoal:
             else:
                 goal.missing.append("origin" if not origin_city else "destination")
         else:
-            goal.origin_airport, goal.destination_airport = trip.origin_airport, trip.destination_airport
+            goal.origin_airport = _own_airport(result.origin, trip.origin_airport) or trip.origin_airport
+            goal.destination_airport = (_own_airport(result.destination, trip.destination_airport)
+                                        or trip.destination_airport)
 
     # Keep only slots this intent actually needs, deduplicated, stable order.
     needed = set(REQUIRED_SLOTS[goal.intent]) | {"arrive_by"}

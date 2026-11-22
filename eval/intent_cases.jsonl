@@ -1,0 +1,24 @@
+{"id": "as_01", "text": "Are flights out of LaGuardia to O'Hare running on time today?", "intent": "assess_trip", "origin_airport": ["LGA"], "destination_airport": ["ORD"], "departure_date": "2026-11-22"}
+{"id": "as_02", "text": "What's the disruption risk on ATL-MIA the day after tomorrow?", "intent": "assess_trip", "origin_airport": ["ATL"], "destination_airport": ["MIA"], "departure_date": "2026-11-24"}
+{"id": "as_03", "text": "Is snow likely to cause trouble for my Denver to Seattle trip on Tuesday morning?", "intent": "assess_trip", "origin_airport": ["DEN"], "destination_airport": ["SEA"], "departure_date": "2026-11-24", "departure_window": "morning"}
+{"id": "as_04", "text": "check delays for SFO to LAX on 2026-11-30", "intent": "assess_trip", "origin_airport": ["SFO"], "destination_airport": ["LAX"], "departure_date": "2026-11-30"}
+{"id": "as_05", "text": "Thinking of flying Boston to Washington on Thursday afternoon. Any weather alerts I should know about?", "intent": "assess_trip", "origin_airport": ["BOS"], "destination_airport": ["DCA", "IAD", "BWI"], "departure_date": "2026-11-26", "departure_window": "afternoon"}
+{"id": "as_06", "text": "How risky is Phoenix to Dallas tomorrow?", "intent": "assess_trip", "origin_airport": ["PHX"], "destination_airport": ["DFW", "DAL"], "departure_date": "2026-11-23"}
+{"id": "pl_01", "text": "I must arrive in Seattle by 10am Wednesday, starting from Chicago. What's the safest plan?", "intent": "plan_trip", "origin_airport": ["ORD", "MDW"], "destination_airport": ["SEA"], "departure_date": "2026-11-25", "arrive_by": "2026-11-25T10:00-08:00"}
+{"id": "pl_02", "text": "I have to get to Boston by noon tomorrow from Philadelphia, what's my best bet?", "intent": "plan_trip", "origin_airport": ["PHL"], "destination_airport": ["BOS"], "departure_date": "2026-11-23", "arrive_by": "2026-11-23T12:00-05:00"}
+{"id": "pl_03", "text": "Train or plane from New York to Washington DC on Tuesday evening, which is less likely to be disrupted?", "intent": "plan_trip", "origin_airport": ["JFK", "LGA", "EWR"], "destination_airport": ["DCA", "IAD", "BWI"], "departure_date": "2026-11-24", "departure_window": "evening"}
+{"id": "pl_04", "text": "Least risky way to get from Chicago to Detroit on Thursday? I prefer rail if it's under 5 hours.", "intent": "plan_trip", "origin_airport": ["ORD", "MDW"], "destination_airport": ["DTW"], "departure_date": "2026-11-26", "has_constraints": true}
+{"id": "pl_05", "text": "Need to reach Los Angeles from Las Vegas by 8pm today. Drive or fly?", "intent": "plan_trip", "origin_airport": ["LAS"], "destination_airport": ["LAX", "BUR", "LGB", "SNA", "ONT"], "departure_date": "2026-11-22", "arrive_by": "2026-11-22T20:00-08:00"}
+{"id": "pl_06", "text": "Flying Houston to New Orleans on Saturday: should I use IAH or Hobby to avoid delays?", "intent": "plan_trip", "origin_airport": ["IAH", "HOU"], "destination_airport": ["MSY"], "departure_date": "2026-11-28"}
+{"id": "rb_01", "text": "Delta just cancelled my DL 402 from ATL to BOS tomorrow morning. Find me another way there.", "intent": "rebook", "origin_airport": ["ATL"], "destination_airport": ["BOS"], "departure_date": "2026-11-23", "departure_window": "morning", "flight_number": "DL 402"}
+{"id": "rb_02", "text": "I missed my connection in Charlotte and need to rebook to Miami today.", "intent": "rebook", "origin_airport": ["CLT"], "destination_airport": ["MIA"], "departure_date": "2026-11-22"}
+{"id": "rb_03", "text": "AA 100 JFK to LAX on Friday is delayed 5 hours, please put me on something earlier.", "intent": "rebook", "origin_airport": ["JFK"], "destination_airport": ["LAX"], "departure_date": "2026-11-27", "flight_number": "AA 100"}
+{"id": "rb_04", "text": "Can you move my Seattle to Portland booking to Saturday instead? The storm looks bad.", "intent": "rebook", "origin_airport": ["SEA"], "destination_airport": ["PDX"], "departure_date": "2026-11-28"}
+{"id": "rb_05", "text": "My Southwest flight to Austin tonight got cancelled, I need a new option.", "intent": "rebook", "missing": ["origin"]}
+{"id": "rb_06", "text": "United cancelled UA 88 from San Francisco to Newark on Monday. Rebook please, no red-eyes.", "intent": "rebook", "origin_airport": ["SFO"], "destination_airport": ["EWR"], "departure_date": "2026-11-23", "flight_number": "UA 88", "has_constraints": true}
+{"id": "os_01", "text": "Can you recommend a good hotel in downtown Chicago?", "intent": "out_of_scope"}
+{"id": "os_02", "text": "Book me a flight from London to Paris next week.", "intent": "out_of_scope"}
+{"id": "os_03", "text": "Write me a Python function that sorts a list.", "intent": "out_of_scope"}
+{"id": "os_04", "text": "What's the best sushi restaurant in Seattle?", "intent": "out_of_scope"}
+{"id": "os_05", "text": "Do US citizens need an ESTA or visa to visit Canada?", "intent": "out_of_scope"}
+{"id": "os_06", "text": "Tell me a fun fact about airports.", "intent": "out_of_scope"}

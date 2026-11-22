@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 620" width="1280" height="620" font-family="Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+    <style>
+      .box { stroke-width: 2; rx: 12; }
+      .title { font-size: 21px; font-weight: 700; fill: #0f172a; }
+      .sub { font-size: 15px; fill: #334155; }
+      .owner { font-size: 13px; font-weight: 700; fill: #64748b; }
+      .edge { stroke: #475569; stroke-width: 2.5; fill: none; marker-end: url(#arrow); }
+      .dash { stroke: #94a3b8; stroke-width: 2; fill: none; stroke-dasharray: 6 5; marker-end: url(#arrow); }
+      .label { font-size: 14px; fill: #475569; font-style: italic; }
+      .stage { font-size: 14px; font-weight: 700; letter-spacing: 1.5px; fill: #94a3b8; }
+    </style>
+  </defs>
+
+  <rect width="1280" height="620" fill="#ffffff"/>
+
+  <!-- stage labels -->
+  <text x="110" y="40" class="stage" text-anchor="middle">INPUT</text>
+  <text x="400" y="40" class="stage" text-anchor="middle">REASON</text>
+  <text x="700" y="40" class="stage" text-anchor="middle">PERCEIVE + ACTION</text>
+  <text x="1010" y="40" class="stage" text-anchor="middle">RESPONSIBLE AI</text>
+
+  <!-- user goal -->
+  <rect x="20" y="70" width="180" height="120" class="box" fill="#f1f5f9" stroke="#64748b"/>
+  <text x="110" y="110" class="title" text-anchor="middle">User goal</text>
+  <text x="110" y="136" class="sub" text-anchor="middle">"Be in SF by</text>
+  <text x="110" y="156" class="sub" text-anchor="middle">Friday 6pm"</text>
+
+  <!-- screen -->
+  <rect x="20" y="250" width="180" height="120" class="box" fill="#fef2f2" stroke="#dc2626"/>
+  <text x="110" y="288" class="title" text-anchor="middle">Screen</text>
+  <text x="110" y="314" class="sub" text-anchor="middle">PII · injection</text>
+  <text x="110" y="334" class="sub" text-anchor="middle">harmful topics</text>
+  <text x="110" y="358" class="owner" text-anchor="middle">M1</text>
+  <path d="M110 190 V245" class="edge"/>
+
+  <!-- planner -->
+  <rect x="270" y="190" width="260" height="240" class="box" fill="#eff6ff" stroke="#2563eb"/>
+  <text x="400" y="226" class="title" text-anchor="middle">Orchestrator</text>
+  <text x="400" y="262" class="sub" text-anchor="middle">① intent (1 Gemini call)</text>
+  <text x="400" y="286" class="sub" text-anchor="middle">assess · plan · rebook · out</text>
+  <text x="400" y="316" class="sub" text-anchor="middle">② ground places &amp; dates</text>
+  <text x="400" y="340" class="sub" text-anchor="middle">(code, not the model)</text>
+  <text x="400" y="370" class="sub" text-anchor="middle">③ sub-task plan</text>
+  <text x="400" y="414" class="owner" text-anchor="middle">M2</text>
+  <path d="M200 310 H265" class="edge"/>
+  <path d="M400 430 V520 H230" class="dash"/>
+  <text x="412" y="470" class="label">out of scope or</text>
+  <text x="412" y="490" class="label">missing detail</text>
+  <rect x="20" y="490" width="205" height="60" class="box" fill="#f1f5f9" stroke="#64748b"/>
+  <text x="122" y="527" class="sub" text-anchor="middle">Clarify / decline</text>
+
+  <!-- parallel group -->
+  <rect x="590" y="70" width="230" height="260" class="box" fill="#f8fafc" stroke="#94a3b8" stroke-dasharray="8 6"/>
+  <text x="705" y="96" class="label" text-anchor="middle">parallel</text>
+  <rect x="610" y="110" width="190" height="95" class="box" fill="#ecfdf5" stroke="#059669"/>
+  <text x="705" y="145" class="title" text-anchor="middle">Flight &amp; Airport</text>
+  <text x="705" y="170" class="sub" text-anchor="middle">FAA · METAR/TAF · BTS</text>
+  <text x="705" y="192" class="owner" text-anchor="middle">M3</text>
+  <rect x="610" y="220" width="190" height="95" class="box" fill="#ecfdf5" stroke="#059669"/>
+  <text x="705" y="255" class="title" text-anchor="middle">Weather</text>
+  <text x="705" y="280" class="sub" text-anchor="middle">NWS alerts · forecast</text>
+  <text x="705" y="302" class="owner" text-anchor="middle">M3</text>
+  <path d="M530 270 H585" class="edge"/>
+
+  <!-- alternatives -->
+  <rect x="610" y="390" width="190" height="105" class="box" fill="#fffbeb" stroke="#d97706"/>
+  <text x="705" y="426" class="title" text-anchor="middle">Alternatives</text>
+  <text x="705" y="451" class="sub" text-anchor="middle">airports · rail · drive</text>
+  <text x="705" y="481" class="owner" text-anchor="middle">M4</text>
+  <path d="M705 330 V385" class="edge"/>
+  <text x="715" y="364" class="label">if risk ≥ moderate</text>
+
+  <!-- evidence store -->
+  <rect x="590" y="535" width="230" height="60" class="box" fill="#f1f5f9" stroke="#64748b"/>
+  <text x="705" y="571" class="sub" text-anchor="middle">Evidence store (tool outputs)</text>
+  <path d="M820 565 H862 V318 H875" class="dash"/>
+  <text x="840" y="590" class="label">checked by Verifier</text>
+
+  <!-- verifier -->
+  <rect x="880" y="190" width="260" height="140" class="box" fill="#fef2f2" stroke="#dc2626"/>
+  <text x="1010" y="228" class="title" text-anchor="middle">Verifier</text>
+  <text x="1010" y="256" class="sub" text-anchor="middle">every claim must cite</text>
+  <text x="1010" y="278" class="sub" text-anchor="middle">real evidence ids</text>
+  <text x="1010" y="314" class="owner" text-anchor="middle">M1</text>
+  <path d="M820 200 H875" class="edge"/>
+  <path d="M800 442 H845 V285 H875" class="edge"/>
+
+  <!-- answer -->
+  <rect x="880" y="370" width="260" height="120" class="box" fill="#eff6ff" stroke="#2563eb"/>
+  <text x="1010" y="406" class="title" text-anchor="middle">Answer</text>
+  <text x="1010" y="432" class="sub" text-anchor="middle">supported claims only;</text>
+  <text x="1010" y="454" class="sub" text-anchor="middle">the rest flagged for a human</text>
+  <text x="1010" y="478" class="owner" text-anchor="middle">M2</text>
+  <path d="M1010 330 V365" class="edge"/>
+
+  <!-- HITL -->
+  <rect x="1170" y="370" width="95" height="120" class="box" fill="#fffbeb" stroke="#d97706"/>
+  <text x="1217" y="410" class="title" text-anchor="middle">Human</text>
+  <text x="1217" y="434" class="sub" text-anchor="middle">approves</text>
+  <text x="1217" y="454" class="sub" text-anchor="middle">rebooking</text>
+  <text x="1217" y="478" class="owner" text-anchor="middle">M4</text>
+  <path d="M1140 430 H1165" class="edge"/>
+
+  <text x="1080" y="560" class="label" text-anchor="middle">every step → JSONL trace (observability)</text>
+</svg>
