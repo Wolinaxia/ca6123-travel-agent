@@ -227,3 +227,20 @@ def test_faa_commercial_closure_is_unchanged(monkeypatch):
     assert len(closure) == 1
     assert "Airport closure at SFO" in closure[0]["observation"]
     assert not any(item["data"].get("active") is False for item in result["evidence"])
+
+
+def test_replay_nyc_rain_is_high_with_ewr_and_lga_programs():
+    try:
+        replay.use_demo_scenario("nyc_rain_20261122_1708z")
+        result = live.assess_trip_risk("Boston", "New York", "2026-11-22", "afternoon")
+        ewr = live.get_faa_airport_status("EWR")
+    finally:
+        replay.use_demo_scenario(None)
+    assert result["ok"] is True, result.get("error")
+    summary = next(item for item in result["evidence"] if item["id"].endswith(":summary"))
+    assert summary["data"]["level"] == "high"
+    assert any(
+        "ground delay" in item["observation"].lower() and "LGA" in item["observation"]
+        for item in result["evidence"]
+    )
+    assert any(item["data"].get("avg_delay_min") == 115 for item in ewr["evidence"])

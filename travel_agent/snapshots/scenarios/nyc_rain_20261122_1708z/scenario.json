@@ -1,0 +1,7 @@
+{
+  "name": "nyc_rain_20261122_1708z",
+  "description": "Recorded live (NYC rain, low ceilings): Ground Delay Program at EWR avg 115 min (low ceilings), EWR departure delays 16-30 min; Ground Delay Program at LGA avg 148 min (low visibility). Note: JFK METAR fetch failed during recording, so get_aviation_weather('JFK') is not in this snapshot.",
+  "now": "2026-11-22T17:08:01.908726Z",
+  "recorded_at": "2026-11-22T17:08:01.908726Z",
+  "default_query": "New York to Boston today evening"
+}
