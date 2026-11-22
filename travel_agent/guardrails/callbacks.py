@@ -42,6 +42,18 @@ from typing import Any, Iterable
 from google.adk.models.llm_response import LlmResponse
 from google.genai import types
 
+try:
+    from google.adk.flows.llm_flows.context._fencing import OTHER_AGENT_CONTEXT_PREAMBLE
+except Exception:  # pragma: no cover - ADK layout fallback
+    OTHER_AGENT_CONTEXT_PREAMBLE = None
+try:
+    from google.adk.flows.llm_flows.context._fencing import (
+        QUOTED_CONTENT_BEGIN,
+        QUOTED_CONTENT_END,
+    )
+except Exception:  # pragma: no cover - ADK layout fallback
+    QUOTED_CONTENT_BEGIN = QUOTED_CONTENT_END = None
+
 from travel_agent.observability.trace import get_active_tracer
 from travel_agent.verification.store import add_tool_result
 
@@ -59,6 +71,7 @@ _APPROVAL_MESSAGE = (
     "I can't confirm or complete a booking yet: this action still needs human approval first."
 )
 _EARLIER_MARKER = "[removed: earlier message blocked by guardrail]"
+_RELAYED_MARKER = "[removed: relayed content blocked by guardrail]"
 
 # Deny-by-default side effects: a tool name with a gated **word** is gated even
 # if nobody remembered to add it to ``GATED_TOOLS``. Names are split on ``_``,
@@ -192,6 +205,78 @@ def _user_contents(llm_request: Any) -> list[Any]:
     ]
 
 
+def _joined_text(content: Any) -> str:
+    return "\n".join(part.text for part in _text_parts(content))
+
+
+def _human_texts(ctx: Any) -> set[str] | None:
+    """Texts of the messages the human sent, or ``None`` if unreadable.
+
+    ADK only writes ``author="user"`` events for real user turns. Relay
+    contents are marked the same way in the request, so text alone cannot tell
+    them apart; this set can. ``None`` means the session could not be read, in
+    which case every content is treated as the human's (strict behaviour).
+    """
+    try:
+        session = getattr(ctx, "session", None)
+        if session is None:
+            return None
+        events = getattr(session, "events", None)
+        if events is None:
+            return None
+        texts: set[str] = set()
+        for event in events:
+            if getattr(event, "author", None) != "user":
+                continue
+            joined = _joined_text(getattr(event, "content", None))
+            if joined:
+                texts.add(joined)
+        return texts
+    except Exception:
+        return None
+
+
+def _quoted_body(text: str) -> str:
+    """The text inside ADK's quote markers (the whole text if there are none).
+
+    ADK wraps each relayed part as ``[agent] said:\n<<<BEGIN...>>>\n...\n<<<END...>>>``.
+    The wrapper sits between consecutive parts and would hide an attack split
+    across them from the joined check, so only the quoted bodies are joined.
+    """
+    if not QUOTED_CONTENT_BEGIN or not QUOTED_CONTENT_END:
+        return text
+    bodies = []
+    rest = text
+    while QUOTED_CONTENT_BEGIN in rest:
+        rest = rest.split(QUOTED_CONTENT_BEGIN, 1)[1]
+        body, _, rest = rest.partition(QUOTED_CONTENT_END)
+        bodies.append(body.strip())
+    return " ".join(bodies) if bodies else text
+
+
+def _is_relayed(
+    content: Any, human_texts: set[str] | None, user_content_text: str
+) -> bool:
+    """True when a user content is another agent's transcript, not the human.
+
+    ADK rewrites other agents' events as ``role="user"`` contents whose first
+    text part is its ``OTHER_AGENT_CONTEXT_PREAMBLE``. A human can type that
+    same prefix, so the preamble alone is not proof: the content is only relayed
+    when its text is not one the human actually sent.
+    """
+    if OTHER_AGENT_CONTEXT_PREAMBLE is None or human_texts is None:
+        return False
+    parts = _text_parts(content)
+    if not parts:
+        return False
+    if not parts[0].text.startswith(OTHER_AGENT_CONTEXT_PREAMBLE):
+        return False
+    joined = "\n".join(part.text for part in parts)
+    if user_content_text and joined == user_content_text:
+        return False
+    return joined not in human_texts
+
+
 def _scan_part(ctx: Any, text: str, *, use_llm: bool | None) -> dict[str, Any]:
     """Run PII redaction, injection and topic checks on one text part."""
     redacted, findings = redact_pii(text)
@@ -207,22 +292,43 @@ def input_guard(callback_context: Any, llm_request: Any) -> Any:
 
     ADK rebuilds the request from session history for each model call, so
     redacting one request does not persist. We therefore walk all user contents:
-    PII is redacted in place, an attack in the latest user turn returns a
-    refusal, and an attack in an earlier turn has that part replaced with a
-    marker so the conversation can continue. Text split across parts is also
-    checked as a concatenation. Fails closed on any unexpected error.
+    PII is redacted in place, an attack in the latest human turn returns a
+    refusal, and an attack in an earlier human turn has that part replaced with
+    a marker so the conversation can continue. Text split across parts is also
+    checked as a concatenation. Contents that are another agent's relayed
+    transcript (ADK preamble) are treated as data: they are scanned with rules
+    only and flagged parts are neutralised, never refused. Fails closed on any
+    unexpected error.
     """
     try:
         contents = _user_contents(llm_request)
         if not contents:
             return None
-        # ADK adds role="user" function-response contents after tool calls;
-        # the latest *human* turn is the last user content that carries text.
+        # Identify the human's own messages before any content is rewritten.
+        # ADK relays other agents' events as role="user" transcripts with the
+        # same preamble a human could type, so the session's user-authored
+        # events are what separate the two.
+        human_texts = _human_texts(callback_context)
+        try:
+            user_content_text = _joined_text(
+                getattr(callback_context, "user_content", None)
+            )
+        except Exception:
+            user_content_text = ""
+        # ADK adds role="user" function-response contents after tool calls, and
+        # relays other agents' events as role="user" transcripts. The latest
+        # *human* turn is the last user content with text that is not relayed.
         textual = [content for content in contents if _text_parts(content)]
-        latest = textual[-1] if textual else contents[-1]
+        human = [
+            content
+            for content in textual
+            if not _is_relayed(content, human_texts, user_content_text)
+        ]
+        latest = human[-1] if human else None
 
         for content in contents:
             is_latest = content is latest
+            relayed = _is_relayed(content, human_texts, user_content_text)
             parts = _text_parts(content)
             if not parts:
                 continue
@@ -238,19 +344,52 @@ def input_guard(callback_context: Any, llm_request: Any) -> Any:
             for part, result in zip(parts, results):
                 part.text = result["text"]
 
-            composite = " ".join(result["text"] for result in results)
-            composite_injection = detect_injection(composite, use_llm=None if is_latest else False)
-            composite_topic = check_topic(composite)
-
             flagged_parts = [
                 part
                 for part, result in zip(parts, results)
                 if result["injection"]["flagged"] or not result["topic"]["allowed"]
             ]
 
+            # Relayed transcripts are data: never refuse because of them. The
+            # composite check is skipped because preamble and quoted blocks are
+            # separate parts by design.
+            if relayed:
+                reasons: list[str] = []
+                for result in results:
+                    reasons.extend(result["injection"]["reasons"])
+                    if not result["topic"]["allowed"]:
+                        reasons.append(str(result["topic"].get("category")))
+                # An attack can be split across the quoted parts (part 0 is
+                # ADK's preamble), so check them joined as well.
+                quoted = list(zip(parts, results))[1:]
+                quoted_text = " ".join(_quoted_body(result["text"]) for _, result in quoted)
+                quoted_injection = detect_injection(quoted_text, use_llm=False)
+                quoted_topic = check_topic(quoted_text)
+                if quoted_injection["flagged"] or not quoted_topic["allowed"]:
+                    reasons.extend(quoted_injection["reasons"])
+                    if not quoted_topic["allowed"]:
+                        reasons.append(str(quoted_topic.get("category")))
+                    flagged_parts = [part for part, _ in quoted] + [
+                        part for part in flagged_parts if part is parts[0]
+                    ]
+                if flagged_parts:
+                    for part in flagged_parts:
+                        part.text = _RELAYED_MARKER
+                    _log_event(
+                        callback_context,
+                        "injection",
+                        "redact_relayed",
+                        sorted(set(reasons)),
+                    )
+                continue
+
+            composite = " ".join(result["text"] for result in results)
+            composite_injection = detect_injection(composite, use_llm=None if is_latest else False)
+            composite_topic = check_topic(composite)
+
             if is_latest:
                 if flagged_parts or composite_injection["flagged"] or not composite_topic["allowed"]:
-                    reasons: list[str] = []
+                    reasons = []
                     for result in results:
                         reasons.extend(result["injection"]["reasons"])
                     if not composite_topic["allowed"]:
