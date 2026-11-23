@@ -7,10 +7,11 @@ failure modes that matter for a travel agent:
 1. the claim cites evidence at all;
 2. every cited id was really returned by a tool (catches fabrication);
 3. the tool call that returned the evidence did not fail;
-4. the claim is not based only on untrusted news text;
+4. at least one cited source is trusted and has not expired;
 5. numeric claims match a number of the **same unit family** in trusted evidence;
 6. airport codes mentioned in the claim appear in the cited trusted evidence;
-7. a risk judgement does not downplay the rule engine (cited findings *and* any
+7. claims of normal airport operations do not contradict cited FAA programs;
+8. a risk judgement does not downplay the rule engine (cited findings *and* any
    summary for the same route, or for a route containing an airport the claim
    or its route-less citation names, in the store).
 
@@ -43,6 +44,7 @@ from __future__ import annotations
 
 import dataclasses
 import re
+from datetime import datetime, timezone
 from typing import Any
 
 from travel_agent.core.reference.airports import get as airport_by_iata
@@ -220,6 +222,54 @@ def _matches(left: float, right: float) -> bool:
 
 def _is_untrusted(evidence: dict[str, Any]) -> bool:
     return (evidence.get("data") or {}).get("untrusted") is True
+
+
+def _verification_time() -> datetime:
+    from travel_agent.tools.replay import demo_now
+
+    return demo_now() or datetime.now(timezone.utc)
+
+
+def _is_expired(evidence: dict[str, Any], as_of: datetime) -> bool:
+    valid_to = evidence.get("valid_to")
+    if valid_to is None:
+        return False
+    try:
+        end = datetime.fromisoformat(str(valid_to).replace("Z", "+00:00"))
+        return end.utcoffset() is None or end <= as_of
+    except ValueError:
+        return True
+
+
+_NORMAL_AIRPORT = re.compile(
+    r"\b(?P<traffic>arrivals?|departures?|flights?|operations?)\s+(?:are\s+)?(?:running|operating)\s+normally\b"
+    r"|\bno active (?:faa )?programs?\b", re.I,
+)
+
+
+def _airport_status_conflict(text: str, evidence: list[dict[str, Any]]) -> bool:
+    match = _NORMAL_AIRPORT.search(text)
+    airports = set(_claim_places(text))
+    if not match or len(airports) > 1:
+        return False
+    traffic = (match["traffic"] or "").lower()
+    for item in evidence:
+        subject = str(item.get("subject") or "")
+        if len(subject) != 3 or airport_by_iata(subject) is None or (airports and subject not in airports):
+            continue
+        data = item.get("data") or {}
+        program = data.get("program")
+        if data.get("active") is False or data.get("affects_commercial") is False:
+            continue
+        if program in ("GDP", "ground_stop", "closure"):
+            return True
+        if program == "arrival_departure":
+            kind = str(data.get("kind") or "").lower()
+            if ((traffic.startswith("arrival") and kind.startswith("departure"))
+                or (traffic.startswith("departure") and kind.startswith("arrival"))):
+                continue
+            return True
+    return False
 
 
 def _to_celsius(value: float, key: str) -> float:
@@ -403,7 +453,7 @@ def _rule_levels(
     return levels
 
 
-def verify_claim(claim: Any, store: dict[str, Any]) -> dict[str, Any]:
+def verify_claim(claim: Any, store: dict[str, Any], *, as_of: datetime | None = None) -> dict[str, Any]:
     """Verify one claim against the evidence store.
 
     ``claim`` may be a ``Claim`` dataclass or a dict with ``text``,
@@ -418,6 +468,7 @@ def verify_claim(claim: Any, store: dict[str, Any]) -> dict[str, Any]:
     text = str(claim_dict.get("text") or "")
     checks: list[dict[str, Any]] = []
     normalised = _normalise_store(store)
+    as_of = as_of or _verification_time()
 
     def record(name: str, ok: bool, detail: str) -> None:
         checks.append({"check": name, "ok": ok, "detail": detail})
@@ -453,7 +504,13 @@ def verify_claim(claim: Any, store: dict[str, Any]) -> dict[str, Any]:
         return _verdict(claim_dict, "unsupported", "supported only by untrusted news text", checks)
     record("not_untrusted_only", True, "at least one trusted source")
 
-    trusted = [item for item in cited if not _is_untrusted(item)]
+    active_store = {key: value for key, value in normalised.items() if not _is_expired(_evidence(value), as_of)}
+    active_ids = [key for key in evidence_ids if key in active_store]
+    active_citations = [_evidence(active_store[key]) for key in active_ids]
+    trusted = [item for item in active_citations if item and not _is_untrusted(item)]
+    if not trusted:
+        record("evidence_current", False, "no current trusted evidence")
+        return _verdict(claim_dict, "unsupported", "no current trusted evidence cited", checks)
 
     evidence_numbers: list[tuple[float, str]] = []
     for item in trusted:
@@ -490,8 +547,12 @@ def verify_claim(claim: Any, store: dict[str, Any]) -> dict[str, Any]:
             )
     record("places_match", True, "airport codes match cited evidence")
 
+    if _airport_status_conflict(text, trusted):
+        record("airport_status", False, "cited evidence shows an active disruption")
+        return _verdict(claim_dict, "contradicted", "cited evidence shows an active airport disruption", checks)
+
     risk = claim_dict.get("risk")
-    levels = _rule_levels(normalised, cited, evidence_ids, text)
+    levels = _rule_levels(active_store, active_citations, active_ids, text)
     if risk in _CLAIM_RISK_RANK and levels:
         claim_rank = _CLAIM_RISK_RANK[str(risk)]
         rule_rank = max(_RULE_RISK_RANK[str(level)] for level in levels)
@@ -508,7 +569,7 @@ def verify_claim(claim: Any, store: dict[str, Any]) -> dict[str, Any]:
     return _verdict(claim_dict, "supported", "supported by cited evidence", checks)
 
 
-def verify_claims(claims: list[Any], store: dict[str, Any]) -> dict[str, Any]:
+def verify_claims(claims: list[Any], store: dict[str, Any], *, as_of: datetime | None = None) -> dict[str, Any]:
     """Verify a list of claims and summarise what a human must review.
 
     Returns ``{"verdicts", "needs_human", "summary", "counts"}``. ``needs_human``
@@ -516,7 +577,8 @@ def verify_claims(claims: list[Any], store: dict[str, Any]) -> dict[str, Any]:
     lists each problem for the HITL step. If claims cite ids while the evidence
     store is empty, the summary calls out the likely wiring mistake.
     """
-    verdicts = [verify_claim(claim, store) for claim in (claims or [])]
+    as_of = as_of or _verification_time()
+    verdicts = [verify_claim(claim, store, as_of=as_of) for claim in (claims or [])]
     counts = {"supported": 0, "unsupported": 0, "contradicted": 0}
     problems: list[str] = []
     for index, verdict in enumerate(verdicts, start=1):

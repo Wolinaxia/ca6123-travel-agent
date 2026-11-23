@@ -60,7 +60,7 @@ SLOT_QUESTIONS = {
     "origin": "Where are you leaving from?",
     "destination": "Where are you going?",
     "departure_date": "Which day do you travel?",
-    "arrive_by": "When do you need to arrive? (the deadline given is already past)",
+    "arrive_by": "What date and time do you need to arrive?",
 }
 OUT_OF_SCOPE_TEXT = (
     "I can only help with the disruption risk of U.S. domestic trips (flights, weather, "
@@ -156,8 +156,6 @@ def assemble_answer(
     overall = _max_risk(signal_claims) or "unknown"
     needs_human = bool(held or errors or any(r.get("needs_human") for r in results.values())
                        or (verification or {}).get("needs_human"))
-    options = [c for c in shown if c.get("agent") == "alternatives"]
-    awaiting_approval = intent == "rebook" and bool(options)
 
     lines = [f"Trip: {_trip_line(goal)}", f"Overall risk: {overall}"]
     for name in SPECIALIST_NAMES:
@@ -178,9 +176,7 @@ def assemble_answer(
         lines.extend(f"- {c['text']} — {c['status']}: {c['reason']}" for c in held)
         lines.extend(f"- {error}" for error in errors)
     if intent == "rebook":
-        lines.append("\nNothing has been booked. " + (
-            "Approve one of the options above to continue." if awaiting_approval
-            else "I found no confirmed replacement option; please check with your airline."))
+        lines.append("\nConfirm a specific replacement with your airline before making a change.")
     return {
         "text": "\n".join(lines),
         "overall_risk": overall,
@@ -188,7 +184,8 @@ def assemble_answer(
         "held_back": held,
         "unavailable": unavailable,
         "needs_human": needs_human,
-        "awaiting_approval": awaiting_approval,
+        # Claims describe evidence. A concrete, validated proposal must come from the booking workflow.
+        "awaiting_approval": False,
         "verifier_enabled": verification is not None,
     }
 
@@ -196,6 +193,15 @@ def assemble_answer(
 # --------------------------------------------------------------------------
 # The ADK agent
 # --------------------------------------------------------------------------
+
+
+def _internal_event(event: Event) -> Event:
+    """Keep ADK tool traffic and state updates, and withhold specialist prose."""
+    if not event.content or not any(part.text for part in event.content.parts or []):
+        return event
+    parts = [part for part in event.content.parts if not part.text]
+    content = event.content.model_copy(update={"parts": parts}) if parts else None
+    return event.model_copy(update={"content": content})
 
 
 class TravelOrchestrator(BaseAgent):
@@ -224,17 +230,24 @@ class TravelOrchestrator(BaseAgent):
             tracer.log_guardrail("orchestrator_input", "refuse" if screened["refusal"] else "redact", screened["reasons"])
         if screened["refusal"]:
             answer = {"text": screened["refusal"], "blocked": True, "needs_human": False}
-            yield self._event(ctx, screened["refusal"], intent="blocked", final_answer=answer)
+            yield self._event(ctx, screened["refusal"], intent="blocked", final_answer=answer,
+                              pending_clarification=None, last_verification=None)
             return
 
         # 2. Plan (blocking Gemini call -> worker thread so the event loop stays free).
         planner: Callable[[str], dict] = self.planner or planner_mod.plan_request
-        planned = await asyncio.to_thread(planner, screened["text"])
+        pending = ctx.session.state.get("pending_clarification")
+        planned = await asyncio.to_thread(planner_mod.resume_clarification, screened["text"], pending)
+        if planned is None:
+            planned = await asyncio.to_thread(planner, screened["text"])
         goal, plan = planned["trip_goal"], planned["plan"]
         if tracer:
             tracer.log("plan", intent=planned["intent"], classified_by=goal.get("classified_by"),
                        agents=[t["agent"] for t in plan], missing=goal.get("missing"))
-        yield self._event(ctx, intent=planned["intent"], trip_goal=goal, plan=plan)
+        yield self._event(ctx, intent=planned["intent"], trip_goal=goal, plan=plan,
+                          pending_clarification=planned.get("pending_clarification"),
+                          last_verification=None, specialist_results={}, evidence_store={},
+                          **{f"result_{name}": None for name in SPECIALIST_NAMES})
 
         if planned["intent"] == "out_of_scope" or planned["needs_clarification"]:
             reply = OUT_OF_SCOPE_TEXT if planned["intent"] == "out_of_scope" else clarify_text(goal)
@@ -243,7 +256,7 @@ class TravelOrchestrator(BaseAgent):
 
         # 3. Flight + weather in parallel; each writes state["result_<name>"].
         async for event in self._sub("signals").run_async(ctx):
-            yield event
+            yield _internal_event(event)
         state = ctx.session.state
         results = {name: parse_agent_result(state.get(f"result_{name}"), name) for name in ("flight_airport", "weather")}
 
@@ -251,7 +264,7 @@ class TravelOrchestrator(BaseAgent):
         signal_claims = results["flight_airport"]["claims"] + results["weather"]["claims"]
         if should_run_alternatives(plan, signal_claims):
             async for event in self._sub("alternatives").run_async(ctx):
-                yield event
+                yield _internal_event(event)
             results["alternatives"] = parse_agent_result(ctx.session.state.get("result_alternatives"), "alternatives")
 
         # 5. Verify against the evidence the tools really returned.

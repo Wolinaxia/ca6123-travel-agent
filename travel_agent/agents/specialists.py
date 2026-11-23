@@ -142,26 +142,33 @@ def parse_agent_result(raw: Any, agent: str) -> dict[str, Any]:
         data = raw if isinstance(raw, dict) else _json_object(str(raw or ""))
         if not isinstance(data, dict):
             raise ValueError("not an object")
+        raw_claims = data.get("claims", [])
+        unavailable = data.get("unavailable", [])
+        needs_human = data.get("needs_human", False)
+        if not isinstance(raw_claims, list) or not isinstance(unavailable, list) or not isinstance(needs_human, bool):
+            raise ValueError("invalid specialist output fields")
     except Exception as exc:
         return {"agent": agent, "claims": [], "needs_human": True,
                 "error": f"could not parse {agent} output ({type(exc).__name__})"}
 
     claims = []
-    for item in data.get("claims") or []:
+    for item in raw_claims:
         if not isinstance(item, dict) or not isinstance(item.get("text"), str) or not item["text"].strip():
             continue
         ids = item.get("evidence_ids")
-        risk = item.get("risk") if item.get("risk") in _RISKS else None
-        confidence = item.get("confidence") if item.get("confidence") in _CONFIDENCE else "low"
+        risk = item.get("risk")
+        confidence = item.get("confidence")
+        if not (risk is None or isinstance(risk, str)) or not isinstance(confidence, (str, type(None))):
+            return {"agent": agent, "claims": [], "needs_human": True,
+                    "error": f"could not parse {agent} output (invalid claim fields)"}
         claims.append({
             "text": item["text"].strip(),
-            "evidence_ids": [str(i) for i in ids] if isinstance(ids, list) else [],
-            "confidence": confidence,
-            "risk": risk,
+            "evidence_ids": [i for i in ids if isinstance(i, str) and i.strip()] if isinstance(ids, list) else [],
+            "confidence": confidence if confidence in _CONFIDENCE else "low",
+            "risk": risk if risk in _RISKS else None,
             "agent": agent,  # kept so the answer can group claims by specialist
         })
     # Failed sources are disclosed to the user but are not claims: a claim
     # "the tool failed" cites no evidence and would wrongly look unsupported.
-    unavailable = [str(item)[:60] for item in data.get("unavailable") or [] if isinstance(item, str) and item.strip()]
-    return {"agent": agent, "claims": claims, "needs_human": bool(data.get("needs_human")),
-            "unavailable": unavailable[:10]}
+    unavailable = [item[:60] for item in unavailable if isinstance(item, str) and item.strip()]
+    return {"agent": agent, "claims": claims, "needs_human": needs_human, "unavailable": unavailable[:10]}

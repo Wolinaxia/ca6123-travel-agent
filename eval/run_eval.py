@@ -189,15 +189,16 @@ def evaluate_guardrails(cases: list[dict[str, Any]], use_llm: bool = False) -> d
     }
 
 
-def _build_verifier_store() -> dict[str, Any]:
-    """Run the replay tools and return ``state["evidence_store"]``.
+def _build_verifier_store() -> tuple[dict[str, Any], datetime]:
+    """Run the replay tools and return the evidence store and capture time.
 
     The scenario has no recorded news tool, so one clearly-labelled synthetic
     untrusted headline is added to exercise the "untrusted-only" check.
     """
     state: dict[str, Any] = {}
     try:
-        replay.use_demo_scenario(SCENARIO)
+        scenario = replay.use_demo_scenario(SCENARIO)
+        as_of = datetime.fromisoformat(scenario["now"].replace("Z", "+00:00"))
         add_tool_result(state, live.assess_trip_risk("New York", "San Francisco", "2026-09-23", "evening"))
         add_tool_result(state, live.get_faa_airport_status("SFO"))
         add_tool_result(state, live.get_faa_airport_status("JFK"))
@@ -267,19 +268,19 @@ def _build_verifier_store() -> dict[str, Any]:
         "tool_ok": True,
         "source": "faa_nas",
     }
-    return store
+    return store, as_of
 
 
 def evaluate_verifier(cases: list[dict[str, Any]]) -> dict[str, Any]:
     """Score labelled claims; return accuracy, confusion matrix and failures."""
-    store = _build_verifier_store()
+    store, as_of = _build_verifier_store()
     confusion: dict[str, dict[str, int]] = {}
     failures: list[dict[str, Any]] = []
     passed = 0
 
     for case in cases:
         expected = str(case.get("expect"))
-        verdict = verify_claim(case.get("claim") or {}, store)
+        verdict = verify_claim(case.get("claim") or {}, store, as_of=as_of)
         actual = str(verdict.get("status"))
         row = confusion.setdefault(expected, {})
         row[actual] = row.get(actual, 0) + 1

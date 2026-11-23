@@ -14,10 +14,13 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 import pytest
+from google.adk.runners import InMemoryRunner
+from google.genai import types
 
 from tests.test_adk_wiring import ScriptedModel, _call_response, _text_response
 from travel_agent.agents.orchestrator import (
     assemble_answer,
+    build_orchestrator,
     run_pipeline,
     run_pipeline_async,
     screen_request,
@@ -48,6 +51,13 @@ def faa_status(airport: str) -> dict:
     return ToolResult(source="faa", ok=True, evidence=[ev]).to_dict()
 
 
+def calm_faa_status(airport: str) -> dict:
+    """Fake FAA status with no active program."""
+    ev = Evidence(id=f"faa:{airport}:status", source="faa", subject=airport, fetched_at=FETCHED,
+                  observation=f"No active FAA program at {airport}", data={"active": False})
+    return ToolResult(source="faa", ok=True, evidence=[ev]).to_dict()
+
+
 def weather_alerts(place: str) -> dict:
     """Fake NWS alerts: none."""
     ev = Evidence(id=f"nws:{place}:none", source="nws", subject=place, fetched_at=FETCHED,
@@ -71,16 +81,16 @@ def _claim(text, ids, risk=None, confidence="high"):
     return {"text": text, "evidence_ids": ids, "confidence": confidence, "risk": risk}
 
 
-def _specialists(flight_claims, weather_claims, alt_claims=None, airport="SFO"):
+def _specialists(flight_claims, weather_claims, alt_claims=None, airport="SFO", flight_tool=faa_status):
     """Placeholder agents that call one fake tool each, then answer with JSON."""
-    flight = ScriptedModel(script=[_call_response("faa_status", {"airport": airport}),
+    flight = ScriptedModel(script=[_call_response(flight_tool.__name__, {"airport": airport}),
                                    _text_response(_result("flight_airport", *flight_claims))])
     weather = ScriptedModel(script=[_call_response("weather_alerts", {"place": airport}),
                                     _text_response(_result("weather", *weather_claims))])
     alt = ScriptedModel(script=[_call_response("rail_options", {"origin": "BOS", "destination": "NYP"}),
                                 _text_response(_result("alternatives", *(alt_claims or [])))])
     agents = {
-        "flight_airport": build_placeholder_specialist("flight_airport", flight, tools=[faa_status]),
+        "flight_airport": build_placeholder_specialist("flight_airport", flight, tools=[flight_tool]),
         "weather": build_placeholder_specialist("weather", weather, tools=[weather_alerts]),
         "alternatives": build_placeholder_specialist("alternatives", alt, tools=[rail_options]),
     }
@@ -101,7 +111,7 @@ def _run(request, agents, tmp_path, **kwargs):
 
 
 GDP = _claim("SFO has a ground delay program averaging 45 min", ["faa:SFO:GDP"], "moderate")
-CALM_FLIGHT = _claim("SFO arrivals are running normally", ["faa:SFO:GDP"], "low")
+CALM_FLIGHT = _claim("No active FAA program at SFO", ["faa:SFO:status"], "low")
 NO_ALERTS = _claim("No active weather alerts for SFO", ["nws:SFO:none"], "low")
 FAKE = _claim("A blizzard will close SFO tonight", ["nws:SFO:blizzard"], "high")
 RAIL = _claim("Direct Amtrak service BOS to NYP takes 3 h 30 min", ["amtrak:BOS-NYP"], "low")
@@ -113,7 +123,7 @@ ASSESS = "How bad are delays from JFK to SFO tomorrow evening?"
 
 
 def test_calm_assess_skips_alternatives_and_shows_supported_claims(tmp_path):
-    agents, models = _specialists([CALM_FLIGHT], [NO_ALERTS])
+    agents, models = _specialists([CALM_FLIGHT], [NO_ALERTS], flight_tool=calm_faa_status)
     out = _run(ASSESS, agents, tmp_path)
     assert out["intent"] == "assess_trip"
     assert models["alternatives"].seen == []  # condition not met: no model call
@@ -124,9 +134,9 @@ def test_calm_assess_skips_alternatives_and_shows_supported_claims(tmp_path):
 
 
 def test_parallel_specialists_both_land_in_evidence_store(tmp_path):
-    agents, _ = _specialists([CALM_FLIGHT], [NO_ALERTS])
+    agents, _ = _specialists([CALM_FLIGHT], [NO_ALERTS], flight_tool=calm_faa_status)
     out = _run(ASSESS, agents, tmp_path)
-    assert {"faa:SFO:GDP", "nws:SFO:none"} <= set(out["evidence_store"])
+    assert {"faa:SFO:status", "nws:SFO:none"} <= set(out["evidence_store"])
 
 
 def test_risk_triggers_alternatives_and_fake_evidence_is_held_back(tmp_path):
@@ -148,13 +158,15 @@ def test_verifier_off_shows_everything(tmp_path):
     assert out["final_answer"]["overall_risk"] == "high"
 
 
-def test_rebook_proposes_but_never_books(tmp_path):
-    agents, _ = _specialists([GDP], [NO_ALERTS], [RAIL])
+@pytest.mark.parametrize("weather_claims, needs_human", [([NO_ALERTS], False), ([FAKE], True)])
+def test_rebook_does_not_ask_to_approve_free_text_claims(tmp_path, weather_claims, needs_human):
+    agents, _ = _specialists([GDP], weather_claims, [RAIL])
     out = _run("My UA 1532 from JFK to SFO tonight got cancelled, rebook me", agents, tmp_path)
     answer = out["final_answer"]
     assert out["intent"] == "rebook"
-    assert answer["awaiting_approval"] is True
-    assert "Nothing has been booked" in answer["text"]
+    assert answer["needs_human"] is needs_human
+    assert answer["awaiting_approval"] is False
+    assert "Approve one of the options" not in answer["text"]
     assert out["plan"][-1]["agent"] == "human_approval"
 
 
@@ -173,6 +185,37 @@ def test_missing_slot_asks_a_question(tmp_path):
     assert all(model.seen == [] for model in models.values())
 
 
+def test_follow_up_date_resumes_the_trip_in_the_same_session(monkeypatch):
+    monkeypatch.setattr("travel_agent.agents.planner._now", lambda: NOW)
+    agents, models = _specialists([CALM_FLIGHT], [NO_ALERTS], flight_tool=calm_faa_status)
+
+    async def run():
+        runner = InMemoryRunner(agent=build_orchestrator(specialists=agents, planner=_planner()),
+                                app_name="travel_agent")
+        service = runner.session_service
+        session = await service.create_session(app_name="travel_agent", user_id="user")
+
+        async def turn(text):
+            message = types.Content(role="user", parts=[types.Part(text=text)])
+            return [event async for event in runner.run_async(user_id="user", session_id=session.id,
+                                                              new_message=message)]
+
+        first = await turn("How bad are delays from JFK to SFO?")
+        assert "Which day do you travel?" in first[-1].content.parts[0].text
+        assert not models["flight_airport"].seen
+        events = await turn("Tomorrow")
+        final = await service.get_session(app_name="travel_agent", user_id="user", session_id=session.id)
+        assert final.state["pending_clarification"] is None
+        assert final.state["trip_goal"]["departure_date"] == "2026-11-23"
+        assert "JFK → SFO" in events[-1].content.parts[0].text
+        visible_authors = [event.author for event in events if event.content
+                           and any(part.text for part in event.content.parts or [])]
+        assert visible_authors == ["orchestrator"]
+        assert final.state["last_verification"]["counts"]["supported"] == 2
+
+    asyncio.run(run())
+
+
 def test_injection_is_refused_before_the_planner(tmp_path):
     seen: list[str] = []
     agents, models = _specialists([], [])
@@ -184,20 +227,20 @@ def test_injection_is_refused_before_the_planner(tmp_path):
 
 def test_pii_is_redacted_before_the_planner(tmp_path):
     seen: list[str] = []
-    agents, _ = _specialists([CALM_FLIGHT], [NO_ALERTS])
+    agents, _ = _specialists([CALM_FLIGHT], [NO_ALERTS], flight_tool=calm_faa_status)
     _run(ASSESS + " Email me at jane.doe@example.com", agents, tmp_path, planner=_planner(seen))
     assert "jane.doe@example.com" not in seen[0]
 
 
 def test_trace_file_records_plan_and_answer(tmp_path):
-    agents, _ = _specialists([CALM_FLIGHT], [NO_ALERTS])
+    agents, _ = _specialists([CALM_FLIGHT], [NO_ALERTS], flight_tool=calm_faa_status)
     out = _run(ASSESS, agents, tmp_path)
     events = [json.loads(line)["event"] for line in (tmp_path / f"{out['trace_run_id']}.jsonl").read_text().splitlines()]
     assert "plan" in events and "answer" in events and "tool_call" in " ".join(events)
 
 
 def test_run_pipeline_works_inside_a_running_event_loop(tmp_path):
-    agents, _ = _specialists([CALM_FLIGHT], [NO_ALERTS])
+    agents, _ = _specialists([CALM_FLIGHT], [NO_ALERTS], flight_tool=calm_faa_status)
 
     async def inside_loop():  # what Jupyter/Colab looks like
         return _run(ASSESS, agents, tmp_path)
@@ -206,7 +249,7 @@ def test_run_pipeline_works_inside_a_running_event_loop(tmp_path):
 
 
 def test_async_entry_point(tmp_path):
-    agents, _ = _specialists([CALM_FLIGHT], [NO_ALERTS])
+    agents, _ = _specialists([CALM_FLIGHT], [NO_ALERTS], flight_tool=calm_faa_status)
     out = asyncio.run(run_pipeline_async(ASSESS, specialists=agents, planner=_planner(), log_dir=str(tmp_path)))
     assert out["final_answer"]["overall_risk"] == "low"
 
@@ -223,6 +266,16 @@ def test_parse_agent_result_accepts_fences_and_drops_bad_claims():
 def test_parse_agent_result_garbage_escalates():
     result = parse_agent_result("sorry, I could not do it", "weather")
     assert result["claims"] == [] and result["needs_human"] is True and "error" in result
+
+
+@pytest.mark.parametrize("raw", [
+    {"claims": 1},
+    {"claims": [{"text": "No alerts", "risk": {}}]},
+    {"claims": [{"text": "No alerts", "confidence": []}]},
+])
+def test_invalid_specialist_field_types_escalate(raw):
+    result = parse_agent_result(raw, "weather")
+    assert result["needs_human"] is True and result["claims"] == [] and result["error"]
 
 
 def test_unparseable_specialist_output_is_shown_as_needing_a_check():
