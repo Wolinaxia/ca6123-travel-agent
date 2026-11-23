@@ -224,13 +224,13 @@ def _call_with_timeout(client: Any, model: str, prompt: str) -> Any:
         executor.shutdown(wait=False, cancel_futures=True)
 
 
-def _clean_slot(value: Any) -> Optional[str]:
+def _clean_slot(value: Any, limit: int = _MAX_SLOT_CHARS) -> Optional[str]:
     if not isinstance(value, str):
         return None
     value = " ".join(value.split())
     if not value or value.lower() in {"null", "none", "n/a", "unknown"}:
         return None
-    return value[:_MAX_SLOT_CHARS]
+    return value[:limit]
 
 
 def parse_llm_answer(raw: Any) -> IntentResult:
@@ -245,7 +245,7 @@ def parse_llm_answer(raw: Any) -> IntentResult:
     constraints = [c for c in (_clean_slot(item) for item in data.get("constraints") or []) if c]
     return IntentResult(
         intent=intent,
-        reason=_clean_slot(data.get("reason")) or "classified by model",
+        reason=_clean_slot(data.get("reason"), limit=160) or "classified by model",
         source="llm",
         origin=_clean_slot(data.get("origin")),
         destination=_clean_slot(data.get("destination")),

@@ -44,3 +44,33 @@ On the dev set (`run_eval --llm`, 2 runs, 74/74 classifier calls answered) both 
 false-positive rate of 2.3% (`inj_benign_02` flagged by the classifier; rules alone: 0%).
 
 Now that it is public it is no longer held out; new detector changes need a fresh held-out set.
+
+## Intent routing (M2)
+
+`intent_cases.jsonl` has 24 requests, 6 per intent (`assess_trip`, `plan_trip`,
+`rebook`, `out_of_scope`). Each one is labelled with the expected intent and the
+expected grounded slots: airports (any airport of the right metro is accepted),
+departure date, window, arrival deadline, flight number, constraints and missing
+slots. None of them repeats a few-shot example from the prompt;
+`tests/test_intent_eval.py` enforces that.
+
+```bash
+.venv/bin/python -m eval.run_intent_eval          # keyword baseline + Gemini
+.venv/bin/python -m eval.run_intent_eval --rules  # baseline only, offline
+```
+
+The clock is fixed (Sun 2026-11-22 12:00 New York) so relative dates are
+reproducible. The report goes to `results/intent_latest.md`. If any Gemini call
+fell back to rules, the LLM column is labelled NOT VALID.
+
+Results on 2026-11-22 (`gemini-3.5-flash-lite`):
+
+| Measure | Keyword baseline | Gemini few-shot |
+|---|---|---|
+| Intent accuracy | 20/24 (83%) | **24/24 (100%)** |
+| Intent + all slots correct | 9/24 (38%) | **24/24 (100%)** |
+| Origin / destination airport | 4/13, 4/13 | 17/17, 17/17 |
+
+This is a development set, not a held-out one. One grounding fix (a city with its
+own airport, e.g. Newark → EWR rather than the New York metro's JFK) was made after
+seeing a failure here.

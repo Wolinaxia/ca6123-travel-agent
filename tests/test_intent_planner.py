@@ -130,6 +130,22 @@ def test_grounding_resolves_airports_and_relative_date():
     assert goal.missing == []
 
 
+def test_single_airport_city_keeps_its_own_airport():
+    # Newark is inside the New York metro; the busiest-pair rule alone gives JFK.
+    goal = _goal(origin="San Francisco", destination="Newark", date_text="tomorrow")
+    assert goal.destination_airport == "EWR"
+
+
+def test_multi_airport_city_still_uses_busiest_pair():
+    goal = _goal(origin="Chicago", destination="Detroit", date_text="tomorrow")
+    assert goal.origin_airport == "ORD"
+
+
+def test_metro_hub_named_after_the_city_is_kept():
+    goal = _goal(origin="Dallas", destination="Chicago", date_text="tomorrow")
+    assert goal.origin_airport == "DFW"
+
+
 def test_deadline_uses_destination_time_zone_and_sets_departure_day():
     goal = _goal(intent="plan_trip", origin="New York", destination="San Francisco", deadline_text="Friday 6pm")
     assert goal.arrive_by == "2026-11-27T18:00-08:00"
