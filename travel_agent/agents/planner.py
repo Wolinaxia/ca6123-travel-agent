@@ -28,12 +28,12 @@ depends on every specialist because it must see every claim.
 from __future__ import annotations
 
 import re
-from dataclasses import asdict, dataclass, field
-from datetime import date, datetime, time, timedelta
+from dataclasses import asdict, dataclass, field, replace
+from datetime import date, datetime, time, timedelta, timezone
 from typing import Any, Optional
 from zoneinfo import ZoneInfo
 
-from travel_agent.agents.intent import Intent, IntentResult, classify_intent
+from travel_agent.agents.intent import CLOCK_PHRASE, DATE_PHRASE, Intent, IntentResult, classify_intent
 
 # Slots each intent needs before specialists can do useful work.
 REQUIRED_SLOTS: dict[str, tuple[str, ...]] = {
@@ -96,7 +96,12 @@ class SubTask:
 # Grounding: raw phrases -> airports and dates
 # --------------------------------------------------------------------------
 
-_TIME = re.compile(r"\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b", re.I)
+_DEADLINE_PARTS = re.compile(
+    rf"(?:(?P<day>{DATE_PHRASE})(?:\s+(?:at\s+)?(?P<clock>{CLOCK_PHRASE}))?|"
+    rf"(?P<clock_only>{CLOCK_PHRASE}))", re.I,
+)
+_DEPARTURE_REPLY = re.compile(rf"(?P<day>{DATE_PHRASE})(?:\s+(?P<window>morning|afternoon|evening))?", re.I)
+_PLACE_REPLY = re.compile(r"[A-Z][\w'-]*(?:\s+[A-Z][\w'-]*)*(?:,\s*[A-Z]{2})?")
 
 
 def _resolve_day(phrase: Optional[str], timezone: str, now: datetime) -> tuple[Optional[date], Optional[str]]:
@@ -107,21 +112,56 @@ def _resolve_day(phrase: Optional[str], timezone: str, now: datetime) -> tuple[O
         return None, None
     # "tonight" is common in user text but not in the shared resolver.
     phrase = re.sub(r"\btonight\b", "today", phrase, flags=re.I)
-    day, _, error = _date_from_text(phrase, timezone, now)
+    try:
+        day, _, error = _date_from_text(phrase, timezone, now)
+    except OverflowError:
+        return None, "date out of range"
     return day, error
 
 
-def _resolve_clock(phrase: str) -> Optional[time]:
-    lowered = phrase.lower()
-    if "noon" in lowered:
-        return time(12, 0)
-    if "midnight" in lowered:
+def _resolve_clock(phrase: Optional[str]) -> time:
+    if phrase is None:
         return time(23, 59)
-    match = _TIME.search(phrase)
-    if not match:
+    lowered = phrase.lower()
+    if lowered == "noon":
+        return time(12, 0)
+    if lowered == "midnight":
+        return time(0, 0)
+    suffix = lowered[-2:]
+    clock = lowered[:-2].strip() if suffix in {"am", "pm"} else lowered
+    hours, _, minutes = clock.partition(":")
+    hour = int(hours)
+    if suffix in {"am", "pm"}:
+        if not 1 <= hour <= 12:
+            raise ValueError("12-hour clock hour out of range")
+        hour = hour % 12 + (12 if suffix == "pm" else 0)
+    return time(hour, int(minutes or 0))
+
+
+def _resolve_deadline(phrase: str, departure: date | None, zone: ZoneInfo, now: datetime) -> datetime | None:
+    from travel_agent.core.engine.parse import WEEKDAYS
+
+    parts = _DEADLINE_PARTS.fullmatch(phrase.strip().rstrip(".?!"))
+    if parts is None:
         return None
-    hour = int(match.group(1)) % 12 + (12 if match.group(3).lower() == "pm" else 0)
-    return time(hour, int(match.group(2) or 0))
+    day_phrase = parts["day"]
+    day = departure
+    if day_phrase:
+        words = day_phrase.lower().split()
+        weekday = WEEKDAYS.get(words[-1])
+        if weekday is None:
+            day = _resolve_day(day_phrase, zone.key, now)[0]
+        else:
+            today = now.astimezone(zone).date()
+            delta = (weekday - today.weekday()) % 7
+            day = today + timedelta(days=7 if words[0] == "next" and delta == 0 else delta)
+    if day is None:
+        return None
+    try:
+        clock = _resolve_clock(parts["clock"] or parts["clock_only"])
+    except ValueError:
+        return None
+    return datetime.combine(day, clock, zone)
 
 
 def _resolve_place(phrase: Optional[str]) -> tuple[Optional[str], Optional[str], str, Optional[str]]:
@@ -184,26 +224,25 @@ def ground(result: IntentResult, request: str, now: datetime) -> TripGoal:
             goal.missing.append(slot)
             goal.notes.append(f"{slot} '{phrase}' is not a known U.S. place")
 
+    departure, date_error = _resolve_day(result.date_text, origin_tz, now)
     # Deadline: day phrase resolved in the destination time zone, because
     # "be in SF by 6pm" means 6pm in San Francisco.
     # (skipped when the destination is unknown: its time zone would be a guess)
+    arrive_by = None
     if result.deadline_text and dest_city and not dest_error:
-        deadline_day, _ = _resolve_day(result.deadline_text, dest_tz, now)
-        deadline_day = deadline_day or _resolve_day(result.date_text, origin_tz, now)[0]
-        if deadline_day is None:
-            deadline_day = now.astimezone(ZoneInfo(dest_tz)).date()
-        clock = _resolve_clock(result.deadline_text) or time(23, 59)
-        arrive_by = datetime.combine(deadline_day, clock, ZoneInfo(dest_tz))
-        if arrive_by < now:
+        arrive_by = _resolve_deadline(result.deadline_text, departure, ZoneInfo(dest_tz), now)
+        if arrive_by is None:
+            goal.notes.append("the arrival deadline needs a valid date and time")
+            goal.missing.append("arrive_by")
+        elif arrive_by < now:
             goal.notes.append("the arrival deadline is already in the past")
             goal.missing.append("arrive_by")
         else:
             goal.arrive_by = arrive_by.isoformat(timespec="minutes")
 
     # Departure day: explicit phrase first, otherwise the deadline day.
-    departure, date_error = _resolve_day(result.date_text, origin_tz, now)
-    if departure is None and goal.arrive_by:
-        departure = datetime.fromisoformat(goal.arrive_by).date()
+    if departure is None and not result.date_text and goal.arrive_by and arrive_by is not None:
+        departure = arrive_by.astimezone(ZoneInfo(origin_tz)).date()
     if departure is None:
         goal.missing.append("departure_date")
         if date_error and result.date_text:
@@ -227,6 +266,11 @@ def ground(result: IntentResult, request: str, now: datetime) -> TripGoal:
             goal.origin_airport = _own_airport(result.origin, trip.origin_airport) or trip.origin_airport
             goal.destination_airport = (_own_airport(result.destination, trip.destination_airport)
                                         or trip.destination_airport)
+            if arrive_by is not None:
+                earliest = datetime.combine(departure, time(trip.window_hours[0]), ZoneInfo(origin_tz))
+                if earliest.astimezone(timezone.utc) >= arrive_by.astimezone(timezone.utc):
+                    goal.notes.append("the departure window starts at or after the arrival deadline")
+                    goal.missing.append("departure_date")
 
     # Keep only slots this intent actually needs, deduplicated, stable order.
     needed = set(REQUIRED_SLOTS[goal.intent]) | {"arrive_by"}
@@ -304,7 +348,10 @@ def plan_request(text: str, now: Optional[datetime] = None, *, client: Any = Non
     dicts, ready to store in ADK state or print in the notebook.
     """
     now = now or _now()
-    result = classify_intent(text, now, client=client)
+    return _plan_result(classify_intent(text, now, client=client), text, now)
+
+
+def _plan_result(result: IntentResult, text: str, now: datetime) -> dict[str, Any]:
     goal = ground(result, text, now)
     plan = build_plan(goal)
     return {
@@ -312,7 +359,29 @@ def plan_request(text: str, now: Optional[datetime] = None, *, client: Any = Non
         "trip_goal": goal.to_dict(),
         "plan": [task.to_dict() for task in plan],
         "needs_clarification": bool(goal.missing) and goal.intent != "out_of_scope",
+        "pending_clarification": {"intent": result.to_dict(), "request": text, "missing": goal.missing}
+        if goal.missing else None,
     }
+
+
+def resume_clarification(text: str, pending: Any) -> dict[str, Any] | None:
+    """Apply a short answer to a missing slot. A full request is planned afresh."""
+    if not isinstance(pending, dict) or not pending.get("missing"):
+        return None
+    missing = pending["missing"]
+    result = IntentResult(**pending["intent"])
+    reply = text.strip().rstrip(".?!")
+    departure = _DEPARTURE_REPLY.fullmatch(reply)
+    if "departure_date" in missing and departure:
+        window = departure["window"] or ("evening" if reply.lower() == "tonight" else result.window)
+        result = replace(result, date_text=departure["day"], window=window.lower())
+    elif "arrive_by" in missing and _DEADLINE_PARTS.fullmatch(reply):
+        result = replace(result, deadline_text=reply)
+    elif missing[0] in {"origin", "destination"} and _PLACE_REPLY.fullmatch(reply):
+        result = replace(result, **{missing[0]: reply})
+    else:
+        return None
+    return _plan_result(result, pending["request"], _now())
 
 
 def plan_request_tool(request: str, tool_context: Any) -> dict[str, Any]:

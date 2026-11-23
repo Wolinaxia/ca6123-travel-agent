@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from types import SimpleNamespace
 
 import pytest
@@ -19,16 +20,18 @@ ENGINE = "engine:JFK-SFO:2026-09-23:evening:FAA_GDP_AVG_15:1"
 
 
 @pytest.fixture()
-def state() -> dict:
+def state(monkeypatch) -> dict:
     """Evidence store built from the recorded replay scenario (offline)."""
     state: dict = {}
     try:
         replay.use_demo_scenario("sfo_gdp_20260923")
+        as_of = replay.demo_now()
         add_tool_result(state, live.assess_trip_risk("New York", "San Francisco", "2026-09-23", "evening"))
         add_tool_result(state, live.get_faa_airport_status("SFO"))
         add_tool_result(state, live.get_faa_airport_status("JFK"))
     finally:
         replay.use_demo_scenario(None)
+    monkeypatch.setattr("travel_agent.verification.checks._verification_time", lambda: as_of)
     return state
 
 
@@ -96,6 +99,22 @@ def test_numbers_mismatch_contradicts(state):
 def test_places_match_supports(state):
     verdict = verify_claim(_claim("SFO has a ground delay program.", [FAA_SFO]), state["evidence_store"])
     assert verdict["status"] == "supported"
+
+
+def test_normal_arrivals_contradict_active_ground_delay(state):
+    verdict = verify_claim(_claim("SFO arrivals are running normally.", [FAA_SFO]), state["evidence_store"])
+    assert verdict["status"] == "contradicted"
+    assert "active airport disruption" in verdict["reason"]
+
+
+def test_expired_airport_evidence_cannot_support_a_current_claim(state):
+    store = state["evidence_store"]
+    store[FAA_SFO]["evidence"]["valid_to"] = "2026-09-23T15:00:00Z"
+    claim = _claim("The SFO ground delay program averages 34 min this evening.", [FAA_SFO])
+    before = datetime(2026, 9, 23, 14, tzinfo=timezone.utc)
+    after = datetime(2026, 9, 23, 16, tzinfo=timezone.utc)
+    assert verify_claim(claim, store, as_of=before)["status"] == "supported"
+    assert verify_claim(claim, store, as_of=after)["status"] == "unsupported"
 
 
 def test_places_mismatch_is_unsupported(state):

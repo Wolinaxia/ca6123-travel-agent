@@ -152,6 +152,27 @@ def test_deadline_uses_destination_time_zone_and_sets_departure_day():
     assert goal.departure_date == "2026-11-27"
 
 
+def test_rule_fallback_keeps_deadline_clock_and_departure_date_separate():
+    result = classify_with_rules("I need to be in San Francisco by Friday at 18:00, leaving from NYC on Thursday.")
+    assert result.deadline_text == "Friday at 18:00"
+    assert result.date_text == "Thursday"
+    goal = ground(result, "example", NOW)
+    assert goal.arrive_by == "2026-11-27T18:00-08:00"
+    assert goal.departure_date == "2026-11-26"
+
+
+@pytest.mark.parametrize("deadline", ["Friday 6:99pm", "2026-02-30 6pm"])
+def test_invalid_deadline_needs_clarification_even_with_a_valid_departure(deadline):
+    goal = _goal(intent="plan_trip", origin="JFK", destination="SFO", date_text="Friday", deadline_text=deadline)
+    assert goal.arrive_by is None
+    assert goal.missing == ["arrive_by"]
+
+
+def test_departure_after_arrival_deadline_needs_clarification():
+    goal = _goal(intent="plan_trip", origin="JFK", destination="SFO", date_text="Saturday", deadline_text="Friday 6pm")
+    assert goal.missing == ["departure_date"]
+
+
 def test_missing_slots_are_reported_not_guessed():
     goal = _goal(intent="rebook", destination="Denver", date_text="tomorrow")
     assert goal.missing == ["origin"]

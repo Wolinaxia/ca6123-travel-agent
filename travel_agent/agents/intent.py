@@ -274,12 +274,13 @@ _OFF_TOPIC = re.compile(r"\b(hotel|visa|passport|restaurant|recipe|code|stock|in
 _FLIGHT_NO = re.compile(r"\b([A-Z]{2}|[A-Z]\d|\d[A-Z])\s?(\d{1,4})\b")
 _FROM = re.compile(r"\b(?:from|leaving|departing)\s+(?:from\s+)?([A-Z][\w.]*(?:\s+[A-Z][\w.]*)*)")
 _TO = re.compile(r"\b(?:to|in|into)\s+([A-Z][\w.]*(?:\s+[A-Z][\w.]*)*)")
-_DATE_WORD = re.compile(
-    r"\b(day after tomorrow|today|tonight|tomorrow|(?:next |this )?(?:mon|tues|wednes|thurs|fri|satur|sun)day|"
-    r"in \d+ days?|20\d{2}-\d{1,2}-\d{1,2})\b",
-    re.I,
+DATE_PHRASE = (
+    r"day after tomorrow|today|tonight|tomorrow|(?:next\s+|this\s+)?"
+    r"(?:mon|tues|wednes|thurs|fri|satur|sun)day|in\s+\d+\s+days?|20\d{2}[-/]\d{1,2}[-/]\d{1,2}"
 )
-_DEADLINE = re.compile(r"\bby\s+((?:\w+day\s+)?(?:\d{1,2}(?::\d{2})?\s*(?:am|pm)|noon|midnight)|\w+day)\b", re.I)
+CLOCK_PHRASE = r"\d{1,2}(?::\d{1,2})?\s*(?:am|pm)|\d{1,2}:\d{1,2}|noon|midnight"
+_DATE_WORD = re.compile(rf"\b({DATE_PHRASE})\b", re.I)
+_DEADLINE = re.compile(rf"\bby\s+((?:{DATE_PHRASE})(?:\s+(?:at\s+)?(?:{CLOCK_PHRASE}))?|{CLOCK_PHRASE})\b", re.I)
 _WINDOW_WORDS = {"morning": "morning", "afternoon": "afternoon", "evening": "evening", "tonight": "evening"}
 
 
@@ -302,8 +303,11 @@ def classify_with_rules(text: str) -> IntentResult:
     if to_match and (from_match or not route):
         destination = to_match.group(1)
 
-    date_match = _DATE_WORD.search(text)
     deadline_match = _DEADLINE.search(text)
+    departure_text = text
+    if deadline_match:
+        departure_text = text[:deadline_match.start()] + " " + text[deadline_match.end():]
+    date_match = _DATE_WORD.search(departure_text)
     flight_match = _FLIGHT_NO.search(text)
     window = next((w for word, w in _WINDOW_WORDS.items() if word in text.lower()), "whole_day")
     has_trip = bool(origin or destination)

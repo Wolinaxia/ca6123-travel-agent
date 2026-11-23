@@ -99,6 +99,7 @@ Specialists read their sub-task from `plan` and the resolved trip from
 | `intent` | `"assess_trip" \| "plan_trip" \| "rebook" \| "out_of_scope"` | Routed intent for this turn. |
 | `trip_goal` | dict (`TripGoal`) | `origin`/`destination` (city), `origin_airport`/`destination_airport` (IATA), `departure_date` (ISO, origin local), `departure_window` (`morning`/`afternoon`/`evening`/`whole_day`), `arrive_by` (ISO datetime with destination offset, or null), `days_ahead` (int, use it to pick live vs forecast sources), `flight_number`, `constraints` (list of user preferences), `missing` (slots still needed), `notes`, `classified_by` (`llm`/`rules`). |
 | `plan` | `list[{"id", "agent", "goal", "depends_on", "parallel_group", "condition"}]` | Ordered sub-tasks. `agent` is one of `flight_airport`, `weather`, `alternatives`, `verifier`, `synthesizer`, `human_approval`, `clarify`. Tasks sharing a `parallel_group` have no dependency on each other. A non-null `condition` means the step may be skipped (e.g. alternatives for `assess_trip` only when some claim has moderate/high risk). |
+| `pending_clarification` | dict or null | Raw intent slots and missing fields for a short follow-up in the same ADK session. |
 
 Specialist `AgentResult.agent` values must use the same names as `plan[*].agent`.
 
@@ -122,7 +123,7 @@ carry the four guardrail callbacks (see `agents.specialists.guarded_callbacks`).
 |---|---|---|
 | `result_<name>` | each specialist (`output_key`) | Raw final message of that specialist. |
 | `specialist_results` | orchestrator | Parsed `AgentResult` dicts per specialist (claims tagged with `agent`). |
-| `final_answer` | orchestrator | `{"text", "overall_risk", "shown_claims", "held_back", "unavailable", "needs_human", "awaiting_approval", "verifier_enabled"}`. For `rebook`, `awaiting_approval=True` means the HITL step (M4) should ask the human; nothing has been booked. |
+| `final_answer` | orchestrator | `{"text", "overall_risk", "shown_claims", "held_back", "unavailable", "needs_human", "awaiting_approval", "verifier_enabled"}`. The analysis flow sets `awaiting_approval=False`. The HITL workflow owns approval for a concrete replacement proposal that it validates for the current trip. |
 
 `agents.orchestrator.run_pipeline(request, scenario=None, verifier_enabled=True)`
 runs one request end to end and returns these keys plus `evidence_store` and
