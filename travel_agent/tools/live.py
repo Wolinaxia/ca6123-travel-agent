@@ -449,6 +449,13 @@ def get_aviation_weather(airport: str) -> dict:
         fetched = _fetched_at(result)
         subject = iata or str(icao)
         metar = weather.metar or {}
+        # obsTime is the station observation (Unix seconds). Retrieval may be much later.
+        observed_at = None
+        if metar.get("obsTime") is not None:
+            try:
+                observed_at = datetime.fromtimestamp(int(metar["obsTime"]), timezone.utc).isoformat()
+            except (TypeError, ValueError, OverflowError, OSError):
+                pass  # Usable TAF periods can still be returned without a dated METAR.
         choice_note = _airport_choice_note(info)
         choice_data = _airport_choice_data(info)
         evidence = [
@@ -459,6 +466,7 @@ def get_aviation_weather(airport: str) -> dict:
                 observation=f"{subject} METAR: {weather.flight_category}, wind {metar.get('wspd', 'n/a')} kt, gusts {metar.get('wgst', 'n/a')} kt{choice_note}",
                 data={
                     "icao": weather.icao,
+                    "observed_at": observed_at,
                     "flight_category": weather.flight_category,
                     "wind_direction": metar.get("wdir"),
                     "wind_speed_kt": metar.get("wspd"),
@@ -518,11 +526,12 @@ def get_weather_alerts(place: str) -> dict:
             severity = alert.severity or "unknown"
             evidence.append(
                 Evidence(
-                    id=f"nws:{alert.id or alert.event}:alert:{index}",
+                    id=f"nws:{subject}:{alert.id or alert.event}:alert:{index}",
                     source="nws",
                     subject=subject,
                     observation=f"{alert.event} (severity {severity})",
                     data={
+                        "nws_alert_id": alert.id,
                         "event": alert.event,
                         "severity": alert.severity,
                         "urgency": alert.urgency,
@@ -660,13 +669,21 @@ def get_route_ontime_history(origin_airport: str, destination_airport: str, mont
         rate = bts.route_base_rate(origin, destination, month_number)
         if not rate:
             return _fail("bts", f"no historical BTS data for {origin}-{destination} in month {month_number}")
-        dep_rate = float(rate.get("dep_del15") or 0.0)
-        cancel_rate = float(rate.get("cancel_rate") or 0.0)
+        statistics = []
+        period = rate["basis"]
+        if period == "annual average":
+            period = f"annual average; no sample for requested month {month_number:02d}"
+        for field, label in (("dep_del15", "departures delayed at least 15 minutes"),
+                             ("arr_del15", "arrivals delayed at least 15 minutes"),
+                             ("cancel_rate", "cancelled")):
+            if rate.get(field) is not None:
+                statistics.append(f"{rate[field]:.1%} {label}")
         evidence = Evidence(
             id=f"bts:{origin}-{destination}:month:{month_number:02d}",
             source="bts",
             subject=f"{origin}-{destination}",
-            observation=f"{origin}-{destination} {rate.get('basis', 'history')}: {dep_rate:.1%} departures delayed 15+ min, {cancel_rate:.1%} cancelled (history, not a forecast)",
+            observation=(f"{origin}-{destination} historical sample ({period}, "
+                         f"{rate.get('flights')} flights): " + ", ".join(statistics)),
             data={
                 "origin": origin,
                 "destination": destination,
