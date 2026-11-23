@@ -122,7 +122,8 @@ _RISKS = {"low", "moderate", "high"}
 _CONFIDENCE = {"low", "medium", "high"}
 
 
-def _json_object(text: str) -> Any:
+def parse_specialist_json(text: str) -> Any:
+    """Decode a specialist message using the orchestrator's JSON and fence rules."""
     fenced = _FENCE.search(text)
     if fenced:
         text = fenced.group(1)
@@ -139,7 +140,7 @@ def parse_agent_result(raw: Any, agent: str) -> dict[str, Any]:
     ``error``, so the orchestrator escalates instead of showing nothing silently.
     """
     try:
-        data = raw if isinstance(raw, dict) else _json_object(str(raw or ""))
+        data = raw if isinstance(raw, dict) else parse_specialist_json(str(raw or ""))
         if not isinstance(data, dict):
             raise ValueError("not an object")
         raw_claims = data.get("claims", [])
