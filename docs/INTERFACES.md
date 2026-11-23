@@ -101,3 +101,29 @@ Specialists read their sub-task from `plan` and the resolved trip from
 | `plan` | `list[{"id", "agent", "goal", "depends_on", "parallel_group", "condition"}]` | Ordered sub-tasks. `agent` is one of `flight_airport`, `weather`, `alternatives`, `verifier`, `synthesizer`, `human_approval`, `clarify`. Tasks sharing a `parallel_group` have no dependency on each other. A non-null `condition` means the step may be skipped (e.g. alternatives for `assess_trip` only when some claim has moderate/high risk). |
 
 Specialist `AgentResult.agent` values must use the same names as `plan[*].agent`.
+
+### Specialist output and answer keys (M2)
+
+Each specialist is an ADK agent named `flight_airport`, `weather` or `alternatives`
+with `output_key="result_<name>"`. Its final message is JSON:
+
+```json
+{"agent": "weather", "needs_human": false,
+ "claims": [{"text": "...", "evidence_ids": ["nws:..."], "confidence": "high", "risk": "low"}],
+ "unavailable": ["get_weather_alerts"]}
+```
+
+Tools that returned `ok=false` go in `unavailable`, **not** in a claim: a claim
+with no evidence is unsupported and would escalate for no reason. Plug a real
+agent in with `build_orchestrator(specialists={"weather": my_agent})`; it must
+carry the four guardrail callbacks (see `agents.specialists.guarded_callbacks`).
+
+| Key | Written by | Meaning |
+|---|---|---|
+| `result_<name>` | each specialist (`output_key`) | Raw final message of that specialist. |
+| `specialist_results` | orchestrator | Parsed `AgentResult` dicts per specialist (claims tagged with `agent`). |
+| `final_answer` | orchestrator | `{"text", "overall_risk", "shown_claims", "held_back", "unavailable", "needs_human", "awaiting_approval", "verifier_enabled"}`. For `rebook`, `awaiting_approval=True` means the HITL step (M4) should ask the human; nothing has been booked. |
+
+`agents.orchestrator.run_pipeline(request, scenario=None, verifier_enabled=True)`
+runs one request end to end and returns these keys plus `evidence_store` and
+`trace_run_id`. `verifier_enabled=False` is the ablation "Verifier OFF" arm.
