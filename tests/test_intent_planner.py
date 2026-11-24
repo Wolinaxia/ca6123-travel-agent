@@ -146,6 +146,28 @@ def test_metro_hub_named_after_the_city_is_kept():
     assert goal.origin_airport == "DFW"
 
 
+def test_nyc_metro_origin_asks_flight_agent_to_compare_airports():
+    goal = _goal(origin="New York", destination="San Francisco", date_text="tomorrow")
+    assert sorted(goal.departure_options) == ["EWR", "JFK", "LGA"]
+    assert goal.departure_options[0] == goal.origin_airport
+    flight = build_plan(goal)[0]
+    assert flight.agent == "flight_airport"
+    assert "NYC departure comparison" in flight.goal and "EWR" in flight.goal
+
+
+@pytest.mark.parametrize(("origin", "destination", "flight"), [
+    ("JFK", "San Francisco", None),        # explicit airport
+    ("Newark", "San Francisco", None),     # city with its own airport
+    ("Boston", "New York", None),          # NYC is the destination
+    ("New York", "San Francisco", "UA 1532"),  # booked flight pins the airport
+])
+def test_pinned_origin_has_no_departure_comparison(origin, destination, flight):
+    goal = _goal(intent="rebook" if flight else "assess_trip", origin=origin, destination=destination,
+                 date_text="tomorrow", flight_number=flight)
+    assert goal.departure_options == []
+    assert "comparison" not in build_plan(goal)[0].goal
+
+
 def test_deadline_uses_destination_time_zone_and_sets_departure_day():
     goal = _goal(intent="plan_trip", origin="New York", destination="San Francisco", deadline_text="Friday 6pm")
     assert goal.arrive_by == "2026-11-27T18:00-08:00"

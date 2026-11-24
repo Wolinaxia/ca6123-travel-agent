@@ -52,6 +52,9 @@ SYNTHESIZER = "synthesizer"
 HUMAN_APPROVAL = "human_approval"
 CLARIFY = "clarify"
 
+# Departure airports the Flight & Airport agent (M3) can compare side by side.
+NYC_AIRPORTS = ("JFK", "EWR", "LGA")
+
 
 @dataclass
 class TripGoal:
@@ -68,6 +71,9 @@ class TripGoal:
     arrive_by: Optional[str] = None  # ISO datetime, destination local time
     days_ahead: Optional[int] = None  # lets specialists pick a forecast source
     flight_number: Optional[str] = None
+    # Set when the user named a metro (e.g. "New York"), not one airport: the
+    # Flight & Airport agent then compares every listed departure airport.
+    departure_options: list[str] = field(default_factory=list)
     constraints: list[str] = field(default_factory=list)
     missing: list[str] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
@@ -200,6 +206,24 @@ def _own_airport(phrase: Optional[str], chosen: Optional[str]) -> Optional[str]:
     return str(own[0]["iata"]) if len(own) == 1 else None
 
 
+def _departure_options(phrase: Optional[str], goal: TripGoal, own_airport: Optional[str]) -> list[str]:
+    """NYC airports to compare when the user named the metro, not an airport.
+
+    "JFK" or "Newark" pins one airport, and a booked flight pins its own; only
+    a metro phrase such as "New York" or "NYC" leaves the choice open.
+    """
+    from travel_agent.core.reference import airports
+
+    if (not phrase or own_airport or airports.get(phrase.strip().upper())
+            or goal.origin_airport not in NYC_AIRPORTS or goal.destination_airport in NYC_AIRPORTS):
+        return []
+    # A city served by exactly one of them ("Newark" -> EWR) also pins the airport.
+    name = phrase.strip().lower()
+    if [str((airports.get(code) or {}).get("municipality") or "").lower() for code in NYC_AIRPORTS].count(name) == 1:
+        return []
+    return [goal.origin_airport] + [code for code in NYC_AIRPORTS if code != goal.origin_airport]
+
+
 def ground(result: IntentResult, request: str, now: datetime) -> TripGoal:
     """Turn the classifier's raw phrases into a checked ``TripGoal``."""
     from travel_agent.core.engine.parse import build_trip
@@ -263,7 +287,8 @@ def ground(result: IntentResult, request: str, now: datetime) -> TripGoal:
             else:
                 goal.missing.append("origin" if not origin_city else "destination")
         else:
-            goal.origin_airport = _own_airport(result.origin, trip.origin_airport) or trip.origin_airport
+            own_origin = _own_airport(result.origin, trip.origin_airport)
+            goal.origin_airport = own_origin or trip.origin_airport
             goal.destination_airport = (_own_airport(result.destination, trip.destination_airport)
                                         or trip.destination_airport)
             if arrive_by is not None:
@@ -271,6 +296,9 @@ def ground(result: IntentResult, request: str, now: datetime) -> TripGoal:
                 if earliest.astimezone(timezone.utc) >= arrive_by.astimezone(timezone.utc):
                     goal.notes.append("the departure window starts at or after the arrival deadline")
                     goal.missing.append("departure_date")
+
+    if not goal.missing and not goal.flight_number:
+        goal.departure_options = _departure_options(result.origin, goal, own_origin)
 
     # Keep only slots this intent actually needs, deduplicated, stable order.
     needed = set(REQUIRED_SLOTS[goal.intent]) | {"arrive_by"}
@@ -301,6 +329,12 @@ def build_plan(goal: TripGoal) -> list[SubTask]:
 
     trip = _trip_label(goal)
     flight_goal = f"Check FAA delay programs, airport weather (METAR/TAF) and on-time history for {trip}."
+    if goal.departure_options:
+        options = ", ".join(goal.departure_options)
+        flight_goal = (f"Requested NYC departure comparison: compare departures from {options} to "
+                       f"{goal.destination_airport} for {trip}. For each departure airport check FAA delay "
+                       f"programs, airport weather (METAR/TAF) and that route's on-time history; also check "
+                       f"{goal.destination_airport}.")
     if goal.intent == "rebook" and goal.flight_number:
         flight_goal = f"Assess the booked flight {goal.flight_number} ({trip}): FAA programs, airport weather, on-time history."
     plan = [
