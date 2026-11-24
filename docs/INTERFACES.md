@@ -97,8 +97,8 @@ Specialists read their sub-task from `plan` and the resolved trip from
 | Key | Type | Meaning |
 |---|---|---|
 | `intent` | `"assess_trip" \| "plan_trip" \| "rebook" \| "out_of_scope"` | Routed intent for this turn. |
-| `trip_goal` | dict (`TripGoal`) | `origin`/`destination` (city), `origin_airport`/`destination_airport` (IATA), `departure_date` (ISO, origin local), `departure_window` (`morning`/`afternoon`/`evening`/`whole_day`), `arrive_by` (ISO datetime with destination offset, or null), `days_ahead` (int, use it to pick live vs forecast sources), `flight_number`, `constraints` (list of user preferences), `missing` (slots still needed), `notes`, `classified_by` (`llm`/`rules`). |
-| `plan` | `list[{"id", "agent", "goal", "depends_on", "parallel_group", "condition"}]` | Ordered sub-tasks. `agent` is one of `flight_airport`, `weather`, `alternatives`, `verifier`, `synthesizer`, `human_approval`, `clarify`. Tasks sharing a `parallel_group` have no dependency on each other. A non-null `condition` means the step may be skipped (e.g. alternatives for `assess_trip` only when some claim has moderate/high risk). |
+| `trip_goal` | dict (`TripGoal`) | `origin`/`destination` (city), `origin_airport`/`destination_airport` (IATA), `departure_date` (ISO, origin local), `departure_window` (`morning`/`afternoon`/`evening`/`whole_day`), `arrive_by` (ISO datetime with destination offset, or null), `days_ahead` (int, use it to pick live vs forecast sources), `flight_number`, `departure_options` (NYC airports to compare when the user named the metro rather than one airport, else `[]`), `constraints` (list of user preferences), `missing` (slots still needed), `notes`, `classified_by` (`llm`/`rules`). |
+| `plan` | `list[{"id", "agent", "goal", "depends_on", "parallel_group", "condition"}]` | Ordered sub-tasks. `agent` is one of `flight_airport`, `weather`, `alternatives`, `verifier`, `synthesizer`, `human_approval`, `clarify`. Tasks sharing a `parallel_group` have no dependency on each other. A non-null `condition` means the step may be skipped (e.g. alternatives for `assess_trip` only when the rule engine or some claim says moderate/high risk). |
 | `pending_clarification` | dict or null | Raw intent slots and missing fields for a short follow-up in the same ADK session. |
 
 Specialist `AgentResult.agent` values must use the same names as `plan[*].agent`.
@@ -111,11 +111,13 @@ with `output_key="result_<name>"`. Its final message is JSON:
 ```json
 {"agent": "weather", "needs_human": false,
  "claims": [{"text": "...", "evidence_ids": ["nws:..."], "confidence": "high", "risk": "low"}],
- "unavailable": ["get_weather_alerts"]}
+ "unavailable": ["SFO get_weather_alerts: timeout"]}
 ```
 
-Tools that returned `ok=false` go in `unavailable`, **not** in a claim: a claim
-with no evidence is unsupported and would escalate for no reason. Plug a real
+Tools that returned `ok=false`, and coverage gaps (no data for part of the trip
+window), go in `unavailable`, **not** in a claim: a claim with no evidence is
+unsupported and would escalate for no reason. Entries are short sentences
+(clipped at 160 characters, at most 12 per specialist). Plug a real
 agent in with `build_orchestrator(specialists={"weather": my_agent})`; it must
 carry the four guardrail callbacks (see `agents.specialists.guarded_callbacks`).
 
@@ -123,8 +125,9 @@ carry the four guardrail callbacks (see `agents.specialists.guarded_callbacks`).
 |---|---|---|
 | `result_<name>` | each specialist (`output_key`) | Raw final message of that specialist. |
 | `specialist_results` | orchestrator | Parsed `AgentResult` dicts per specialist (claims tagged with `agent`). |
-| `final_answer` | orchestrator | `{"text", "overall_risk", "shown_claims", "held_back", "unavailable", "needs_human", "awaiting_approval", "verifier_enabled"}`. The analysis flow sets `awaiting_approval=False`. The HITL workflow owns approval for a concrete replacement proposal that it validates for the current trip. |
+| `rule_assessment` | orchestrator | Deterministic rule-engine result for the trip (`tools.live.assess_trip_risk`, run in parallel with the specialists): `{"risk", "engine_level", "confidence", "action", "evidence_id"}` or `{"error"}`. `risk` maps the engine's `low/elevated/high/severe` onto the claim scale. The engine evidence is added to the Verifier's view only, not to `evidence_store`. |
+| `final_answer` | orchestrator | `{"text", "overall_risk", "rule_risk", "shown_claims", "held_back", "unavailable", "needs_human", "awaiting_approval", "verifier_enabled"}`. `overall_risk` is the higher of the rule engine's level and the shown claims' risks. The analysis flow sets `awaiting_approval=False`. The HITL workflow owns approval for a concrete replacement proposal that it validates for the current trip. |
 
 `agents.orchestrator.run_pipeline(request, scenario=None, verifier_enabled=True)`
 runs one request end to end and returns these keys plus `evidence_store` and
-`trace_run_id`. `verifier_enabled=False` is the ablation "Verifier OFF" arm.
+`trace_run_id`. `risk_engine=None` skips the rule engine (offline tests). `verifier_enabled=False` is the ablation "Verifier OFF" arm.

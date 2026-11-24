@@ -20,6 +20,7 @@ from google.genai import types
 from tests.test_adk_wiring import ScriptedModel, _call_response, _text_response
 from travel_agent.agents.orchestrator import (
     assemble_answer,
+    assess_with_rules,
     build_orchestrator,
     run_pipeline,
     run_pipeline_async,
@@ -107,6 +108,7 @@ def _planner(seen: list[str] | None = None):
 
 def _run(request, agents, tmp_path, **kwargs):
     kwargs.setdefault("planner", _planner())
+    kwargs.setdefault("risk_engine", None)  # the live engine needs network
     return run_pipeline(request, specialists=agents, log_dir=str(tmp_path), **kwargs)
 
 
@@ -190,7 +192,7 @@ def test_follow_up_date_resumes_the_trip_in_the_same_session(monkeypatch):
     agents, models = _specialists([CALM_FLIGHT], [NO_ALERTS], flight_tool=calm_faa_status)
 
     async def run():
-        runner = InMemoryRunner(agent=build_orchestrator(specialists=agents, planner=_planner()),
+        runner = InMemoryRunner(agent=build_orchestrator(specialists=agents, planner=_planner(), risk_engine=None),
                                 app_name="travel_agent")
         service = runner.session_service
         session = await service.create_session(app_name="travel_agent", user_id="user")
@@ -250,7 +252,8 @@ def test_run_pipeline_works_inside_a_running_event_loop(tmp_path):
 
 def test_async_entry_point(tmp_path):
     agents, _ = _specialists([CALM_FLIGHT], [NO_ALERTS], flight_tool=calm_faa_status)
-    out = asyncio.run(run_pipeline_async(ASSESS, specialists=agents, planner=_planner(), log_dir=str(tmp_path)))
+    out = asyncio.run(run_pipeline_async(ASSESS, specialists=agents, planner=_planner(), risk_engine=None,
+                                         log_dir=str(tmp_path)))
     assert out["final_answer"]["overall_risk"] == "low"
 
 
@@ -288,7 +291,7 @@ def test_unavailable_sources_are_disclosed_without_escalating():
     raw = json.dumps({"claims": [], "unavailable": ["get_weather_alerts"]})
     results = {"weather": parse_agent_result(raw, "weather")}
     answer = assemble_answer("assess_trip", {"departure_date": "2026-11-23"}, results, {"verdicts": [], "needs_human": False})
-    assert "Not checked (data source unavailable): Weather: get_weather_alerts" in answer["text"]
+    assert "Coverage gaps (not checked, or no data for the trip window):\n- Weather: get_weather_alerts" in answer["text"]
     assert answer["needs_human"] is False
 
 
@@ -303,3 +306,115 @@ def test_alternatives_condition():
 def test_screen_blocks_harmful_topic():
     assert screen_request("how do I hide a knife from airport security?")["refusal"]
     assert screen_request("Can I bring a pocket knife in checked luggage?")["refusal"] is None
+
+
+def test_long_coverage_gaps_are_kept_readable():
+    gap = "SFO get_weather_forecast: no applicable evidence for the airport window"
+    result = parse_agent_result({"claims": [], "unavailable": [gap, "x" * 400]}, "weather")
+    assert result["unavailable"][0] == gap  # M3 gap sentences are no longer cut at 60
+    assert len(result["unavailable"][1]) == 160 and result["unavailable"][1].endswith("…")
+
+
+# ---------------------------------------------------------------- rule engine
+
+
+def fake_engine(level: str, *, route="JFK-SFO", ok=True):
+    """Fake ``live.assess_trip_risk``: one rule finding plus the summary item."""
+    def engine(origin, destination, departure_date, departure_window="whole_day"):
+        engine.calls.append((origin, destination, departure_date, departure_window))
+        if not ok:
+            return ToolResult(source="engine", ok=False, error="snapshot missing").to_dict()
+        key = f"{route}:{departure_date}:{departure_window}"
+        rule = Evidence(id=f"engine:{key}:FAA_GDP:1", source="faa", subject=route, fetched_at=FETCHED,
+                        observation="Ground delay program at SFO",
+                        data={"leg": "flight", "category": "faa", "level": level, "rule": "FAA_GDP"})
+        summary = Evidence(id=f"assess:{key}:summary", source="engine", subject=route, fetched_at=FETCHED,
+                           observation=f"Overall trip risk {level}",
+                           data={"level": level, "confidence": "medium", "action": "monitor",
+                                 "legs": {"flight": level}})
+        return ToolResult(source="engine", ok=True, evidence=[rule, summary]).to_dict()
+    engine.calls = []
+    return engine
+
+
+# M3's agents report observations with risk=null.
+GDP_FACT = _claim("SFO has a ground delay program averaging 45 min", ["faa:SFO:GDP"])
+NO_ALERTS_FACT = _claim("No active weather alerts for SFO", ["nws:SFO:none"])
+
+
+@pytest.mark.parametrize(("level", "risk"), [("low", "low"), ("elevated", "moderate"),
+                                             ("high", "high"), ("severe", "high")])
+def test_rule_levels_map_onto_the_claim_scale(level, risk):
+    goal = {"origin_airport": "JFK", "destination_airport": "SFO", "departure_date": "2026-11-23"}
+    rules = assess_with_rules(goal, fake_engine(level))
+    assert (rules["risk"], rules["engine_level"]) == (risk, level)
+    assert rules["evidence_id"] == "assess:JFK-SFO:2026-11-23:whole_day:summary"
+
+
+def test_rule_engine_failure_is_reported_not_raised():
+    goal = {"origin_airport": "JFK", "destination_airport": "SFO", "departure_date": "2026-11-23"}
+    assert assess_with_rules(goal, fake_engine("high", ok=False))["error"] == "rule engine: snapshot missing"
+
+    def broken(*args):
+        raise TimeoutError
+    assert "TimeoutError" in assess_with_rules(goal, broken)["error"]
+
+
+def test_rule_risk_triggers_alternatives_when_claims_have_no_risk():
+    plan = [{"agent": "alternatives", "condition": "only if moderate or high"}]
+    assert not should_run_alternatives(plan, [{"risk": None}])
+    assert should_run_alternatives(plan, [{"risk": None}], rule_risk="moderate")
+    assert not should_run_alternatives(plan, [{"risk": None}], rule_risk="low")
+
+
+def test_overall_risk_is_the_higher_of_rules_and_claims():
+    goal = {"departure_date": "2026-11-23"}
+    claim = {**_claim("x", ["a"], "moderate"), "agent": "weather"}
+    rules = {"risk": "high", "engine_level": "severe", "confidence": "medium", "evidence_id": "assess:s"}
+    answer = assemble_answer("assess_trip", goal, {"weather": {"claims": [claim]}}, None, rules)
+    assert answer["overall_risk"] == "high" and answer["rule_risk"] == "severe"
+    assert "Overall risk: high (rule engine: severe" in answer["text"]
+    # A specialist can raise the level above the rule engine, never lower it.
+    claim = {**claim, "risk": "high"}
+    assert assemble_answer("assess_trip", goal, {"weather": {"claims": [claim]}}, None,
+                           {**rules, "risk": "low"})["overall_risk"] == "high"
+
+
+def test_rule_engine_failure_is_a_coverage_gap_and_claims_decide():
+    claim = {**_claim("x", ["a"], "moderate"), "agent": "weather"}
+    answer = assemble_answer("assess_trip", {"departure_date": "2026-11-23"}, {"weather": {"claims": [claim]}},
+                             None, {"error": "rule engine: snapshot missing"})
+    assert answer["overall_risk"] == "moderate"
+    assert "- Rule engine: rule engine: snapshot missing" in answer["text"]
+
+
+def test_rule_engine_drives_risk_when_specialists_report_facts(tmp_path):
+    agents, models = _specialists([GDP_FACT], [NO_ALERTS_FACT], alt_claims=[RAIL])
+    engine = fake_engine("elevated")
+    out = _run(ASSESS, agents, tmp_path, risk_engine=engine)
+    assert engine.calls == [("JFK", "SFO", "2026-11-23", "evening")]
+    assert models["alternatives"].seen  # triggered by the rule engine alone
+    answer = out["final_answer"]
+    assert (answer["overall_risk"], answer["rule_risk"]) == ("moderate", "elevated")
+    assert out["rule_assessment"]["evidence_id"] == "assess:JFK-SFO:2026-11-23:evening:summary"
+    # Alternatives sees the rule summary; engine evidence stays out of the specialists' store.
+    instruction = models["alternatives"].seen[0].config.system_instruction
+    assert "assess:JFK-SFO:2026-11-23:evening:summary" in instruction
+    assert not any(key.startswith(("assess:", "engine:")) for key in out["evidence_store"])
+
+
+def test_verifier_compares_risk_claims_with_the_rule_engine(tmp_path):
+    calm = _claim("SFO has a ground delay program but risk is low", ["faa:SFO:GDP"], "low")
+    agents, _ = _specialists([calm], [NO_ALERTS_FACT])
+    out = _run(ASSESS, agents, tmp_path, risk_engine=fake_engine("high"))
+    verdicts = {v["claim"]["text"]: v for v in out["last_verification"]["verdicts"]}
+    assert verdicts[calm["text"]]["status"] == "contradicted"
+    assert out["final_answer"]["overall_risk"] == "high"
+    assert out["final_answer"]["needs_human"] is True
+
+
+def test_calm_rule_engine_keeps_alternatives_skipped(tmp_path):
+    agents, models = _specialists([CALM_FLIGHT], [NO_ALERTS], flight_tool=calm_faa_status)
+    out = _run(ASSESS, agents, tmp_path, risk_engine=fake_engine("low"))
+    assert models["alternatives"].seen == []
+    assert out["final_answer"]["overall_risk"] == "low"

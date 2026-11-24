@@ -31,6 +31,9 @@ def offline_scenario(monkeypatch):
         pytest.fail("Flight tests must never create a Gemini client")
 
     monkeypatch.setenv("GUARDRAIL_LLM", "0")
+    # A key in .env would make the planner build a Gemini client in run_pipeline tests.
+    monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
+    monkeypatch.delenv("GOOGLE_GENAI_API_KEY", raising=False)
     monkeypatch.setattr(genai.Client, "__init__", unexpected_client)
     replay.use_demo_scenario("sfo_gdp_20260923")
     try:
@@ -161,9 +164,14 @@ def test_future_trip_gaps_reach_final_answer(monkeypatch, tmp_path, commercial_f
         _text_response(f"```json\n{reply}\n```"),
     ])
     weather = ScriptedModel(script=[_text_response(json.dumps(asdict(AgentResult("weather"))))])
+    # The rule engine rates this GDP scenario elevated, so the alternatives step
+    # runs too; it needs its own model so `flight.seen` stays the flight agent's.
+    alternatives = ScriptedModel(script=[_text_response(json.dumps(asdict(AgentResult("alternatives"))))])
     out = run_pipeline(
         "How bad are delays from JFK to SFO on 2026-09-24 morning?",
-        model=flight, specialists={"weather": build_placeholder_specialist("weather", weather, tools=[])},
+        model=flight, specialists={"weather": build_placeholder_specialist("weather", weather, tools=[]),
+                                   "alternatives": build_placeholder_specialist("alternatives", alternatives,
+                                                                                tools=[])},
         scenario="sfo_gdp_20260923", log_dir=str(tmp_path),
     )
     responses = {p.function_response.name: p.function_response.response
