@@ -10,7 +10,10 @@ from google.adk.runners import InMemoryRunner
 
 from tests.test_adk_wiring import ScriptedModel, _call_response, _run, _text_response
 from travel_agent.agents.flight_airport import build_flight_airport_agent
+from travel_agent.agents.orchestrator import run_pipeline
 from travel_agent.agents.perceive import filter_tool_result
+from travel_agent.agents.specialists import build_placeholder_specialist
+from travel_agent.core.models import FaaClosure
 from travel_agent.guardrails.callbacks import assert_guarded
 from travel_agent.schemas import AgentResult, Claim
 from travel_agent.tools import live, replay
@@ -74,7 +77,7 @@ def run_case(calls, claims, *, task="Assess the JFK to SFO flight.", unavailable
 def test_sfo_same_day_faa_and_september_bts_reach_model():
     faa = "faa_nas:SFO:GDP:0"
     bts = "bts:JFK-SFO:month:09"
-    visible, _ = run_case(
+    visible, responses = run_case(
         [("get_airport_delays", {"airport": "SFO"}),
          ("get_route_ontime_history", {"origin_airport": "JFK"})],
         [Claim("At 09:10 PDT on September 23, the SFO ground delay program averaged 34 minutes.",
@@ -83,6 +86,7 @@ def test_sfo_same_day_faa_and_september_bts_reach_model():
                "15 minutes late and 14.2% arrived at least 15 minutes late.", [bts], "high")],
     )
     assert set(visible) == {faa, bts}
+    assert "coverage_gap" not in responses[0]
     record = visible[faa]
     assert record["valid_to"] is None
     assert record["data"]["as_of_local"] == "2026-09-23T09:10:00-07:00"
@@ -126,6 +130,60 @@ def test_station_times_and_taf_windows_reach_model(monkeypatch):
     assert visible["aviation_wx:JFK:metar"]["data"]["as_of_local"] == "2026-09-23T11:51:00-04:00"
     taf = visible["aviation_wx:SFO:taf:4"]
     assert (taf["valid_from"], taf["valid_to"]) == ("2026-09-24T06:00:00+00:00", "2026-09-24T09:00:00+00:00")
+
+
+@pytest.mark.parametrize(("commercial_flags", "expect_faa_gap"), [
+    pytest.param([], True, id="expired-snapshot"),
+    pytest.param([False], True, id="general-aviation-only"),
+    pytest.param([False, True], False, id="commercial-and-general-aviation"),
+])
+def test_future_trip_gaps_reach_final_answer(monkeypatch, tmp_path, commercial_flags, expect_faa_gap):
+    batch = live.aviation_wx.fetch(["KJFK", "KSFO"])
+    assert batch.ok
+    monkeypatch.setattr(live.aviation_wx, "fetch", lambda ids: batch)
+
+    feed = live.faa_nas.fetch(now=replay.demo_now())
+    assert feed.ok
+    feed.data.closures = [
+        FaaClosure(airport="SFO", reason="Scheduled restriction", affects_commercial=flag,
+                   start="2026-09-23T12:00:00Z", reopen="2026-09-25T12:00:00Z")
+        for flag in commercial_flags
+    ]
+    monkeypatch.setattr(live.faa_nas, "fetch", lambda now: feed)
+
+    taf_id = "aviation_wx:SFO:taf:5"
+    claim = Claim("A TAF forecast period is available for SFO.", [taf_id], "high")
+    # The scripted reply cites a valid forecast and omits both tool gaps.
+    reply = json.dumps(asdict(AgentResult("flight_airport", [claim])))
+    flight = ScriptedModel(script=[
+        _call_response("get_airport_delays", {"airport": "SFO"}),
+        _call_response("get_aviation_weather", {"airport": "SFO"}),
+        _text_response(f"```json\n{reply}\n```"),
+    ])
+    weather = ScriptedModel(script=[_text_response(json.dumps(asdict(AgentResult("weather"))))])
+    out = run_pipeline(
+        "How bad are delays from JFK to SFO on 2026-09-24 morning?",
+        model=flight, specialists={"weather": build_placeholder_specialist("weather", weather, tools=[])},
+        scenario="sfo_gdp_20260923", log_dir=str(tmp_path),
+    )
+    responses = {p.function_response.name: p.function_response.response
+                 for content in flight.seen[-1].contents for p in content.parts if p.function_response}
+    faa, aviation = responses["get_airport_delays"], responses["get_aviation_weather"]
+    assert faa["ok"] and aviation["ok"]
+    assert [e["data"]["affects_commercial"] for e in faa["evidence"]] == commercial_flags
+    assert [e["id"] for e in aviation["evidence"]] == [taf_id]
+    assert all(out["evidence_store"][e["id"]]["tool_ok"] for e in faa["evidence"] + aviation["evidence"])
+    faa_gap = "SFO FAA: no status evidence for trip window"
+    metar_gap = "SFO METAR: no observation for trip window"
+    assert faa.get("coverage_gap") == (faa_gap if expect_faa_gap else None)
+    assert aviation["coverage_gap"] == metar_gap
+
+    expected = {metar_gap, faa_gap} if expect_faa_gap else {metar_gap}
+    answer = out["final_answer"]
+    assert set(out["specialist_results"]["flight_airport"]["unavailable"]) == expected
+    assert set(answer["unavailable"]["flight_airport"]) == expected
+    assert metar_gap in answer["text"] and (faa_gap in answer["text"]) == expect_faa_gap
+    assert answer["shown_claims"] == [{**asdict(claim), "agent": "flight_airport"}]
 
 
 def test_monthly_and_annual_history_remain_distinct():

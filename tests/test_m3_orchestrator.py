@@ -8,7 +8,7 @@ from google import genai
 
 from tests.test_adk_wiring import ScriptedModel, _call_response, _text_response
 from travel_agent.agents.flight_airport import build_flight_airport_agent
-from travel_agent.agents.orchestrator import run_pipeline
+from travel_agent.agents.orchestrator import build_orchestrator, run_pipeline
 from travel_agent.agents.specialists import build_placeholder_specialist
 from travel_agent.agents.weather import build_weather_agent
 from travel_agent.schemas import AgentResult, Claim
@@ -18,6 +18,17 @@ BTS = "bts:JFK-SFO:month:11"
 JFK = "open_meteo:JFK:day:2026-11-29"
 SFO = "open_meteo:SFO:day:2026-11-29"
 GAP = "SFO forecast gap 2026-11-30 00:00:00/03:37:09 PST"
+
+
+def test_default_orchestrator_uses_m3_specialists():
+    model = ScriptedModel()
+    runner = build_orchestrator(model=model)
+    flight, weather = runner.sub_agents[0].sub_agents
+    assert flight.name == "flight_airport"
+    assert flight.instruction is build_flight_airport_agent(model).instruction
+    assert weather.name == "weather"
+    assert weather.instruction is build_weather_agent(model).instruction
+    assert flight.model is weather.model is model
 
 
 @pytest.mark.parametrize(("fenced", "include_bad_claim"), [
