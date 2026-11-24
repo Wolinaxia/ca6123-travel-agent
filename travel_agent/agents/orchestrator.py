@@ -42,12 +42,14 @@ from google.adk.events import Event, EventActions
 from google.genai import types
 
 from travel_agent.agents import planner as planner_mod
+from travel_agent.agents.flight_airport import build_flight_airport_agent
 from travel_agent.agents.specialists import (
     DEFAULT_MODEL,
     SPECIALIST_NAMES,
     build_placeholder_specialist,
     parse_agent_result,
 )
+from travel_agent.agents.weather import build_weather_agent
 from travel_agent.guardrails.injection import detect_injection
 from travel_agent.guardrails.pii import redact_pii
 from travel_agent.guardrails.topics import check_topic
@@ -290,18 +292,20 @@ def build_orchestrator(
     verifier_enabled: bool = True,
     planner: Optional[Callable[[str], dict]] = None,
 ) -> TravelOrchestrator:
-    """Wire the root agent. ``specialists`` overrides any of the placeholders."""
-    agents = {name: build_placeholder_specialist(name, model) for name in SPECIALIST_NAMES}
-    agents.update(specialists or {})
+    """Wire the root agent with the default specialists and any caller overrides."""
+    overrides = specialists or {}
+    flight = overrides.get("flight_airport") or build_flight_airport_agent(model)
+    weather = overrides.get("weather") or build_weather_agent(model)
+    alternatives = overrides.get("alternatives") or build_placeholder_specialist("alternatives", model)
     with warnings.catch_warnings():
         # ParallelAgent is marked deprecated in ADK 2.x in favour of Workflow,
         # but it is what the course uses and still fully supported.
         warnings.simplefilter("ignore", DeprecationWarning)
-        signals = ParallelAgent(name="signals", sub_agents=[agents["flight_airport"], agents["weather"]])
+        signals = ParallelAgent(name="signals", sub_agents=[flight, weather])
     return TravelOrchestrator(
         name="orchestrator",
         description="Routes U.S. domestic trip-disruption requests to specialists.",
-        sub_agents=[signals, agents["alternatives"]],
+        sub_agents=[signals, alternatives],
         verifier_enabled=verifier_enabled,
         planner=planner,
     )
