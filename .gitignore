@@ -10,3 +10,6 @@ travel_agent/data/raw/
 .DS_Store
 
 eval/results/*.json
+
+# M4 run-time memory (preferences, learned cases, embedding cache)
+.memory/

@@ -1,9 +1,9 @@
 """Specialist output contract, shared callbacks and the remaining placeholder.
 
-The real Flight & Airport and Weather agents (M3) live in ``flight_airport.py``
-and ``weather.py`` and are wired in by default. ``alternatives`` is still the
-placeholder below until M4's agent is merged; the flight/weather placeholders
-remain only for offline tests. To plug an agent in, pass it to
+The real agents are wired in by default: Flight & Airport and Weather (M3,
+``flight_airport.py`` / ``weather.py``) and Alternatives (M4,
+``alternatives.py``, via ``handoff.build_m4_alternatives``). The placeholders
+below remain only for offline tests. To plug an agent in, pass it to
 ``build_orchestrator(specialists={...})``. The agent only has to:
 
 1. read its sub-task from ``state["plan"]`` and the trip from ``state["trip_goal"]``;
@@ -32,8 +32,7 @@ from travel_agent.tools import live
 DEFAULT_MODEL = "gemini-3.5-flash-lite"
 SPECIALIST_NAMES = ("flight_airport", "weather", "alternatives")
 
-# Placeholder tool sets, chosen from tools/README.md. Only ``alternatives`` is
-# used in production (until M4 lands); the other two serve the offline tests.
+# Placeholder tool sets for offline tests (production uses the M3/M4 agents).
 DEFAULT_TOOLS: dict[str, list[Callable[..., dict]]] = {
     "flight_airport": [live.get_faa_airport_status, live.get_aviation_weather, live.get_route_ontime_history],
     "weather": [live.get_weather_alerts, live.get_weather_forecast, live.get_extended_forecast],
@@ -128,6 +127,17 @@ _RISKS = {"low", "moderate", "high"}
 _CONFIDENCE = {"low", "medium", "high"}
 
 
+def _gap_text(item: Any) -> str:
+    """A gap entry as text; models sometimes send ``{"tool", "target", "reason"}``."""
+    if isinstance(item, str):
+        return item.strip()
+    if isinstance(item, dict):
+        where = " ".join(str(item[k]) for k in ("tool", "target", "airport", "route", "source") if item.get(k))
+        why = str(item.get("reason") or item.get("error") or "").strip()
+        return f"{where}: {why}" if where and why else (where or why)
+    return ""
+
+
 def _clip(text: str) -> str:
     return text if len(text) <= MAX_GAP_CHARS else text[:MAX_GAP_CHARS - 1] + "…"
 
@@ -174,7 +184,9 @@ def parse_agent_result(raw: Any, agent: str) -> dict[str, Any]:
                     "error": f"could not parse {agent} output (invalid claim fields)"}
         claims.append({
             "text": item["text"].strip(),
-            "evidence_ids": [i for i in ids if isinstance(i, str) and i.strip()] if isinstance(ids, list) else [],
+            # A lone id string is a common model slip; keep it rather than lose the citation.
+            "evidence_ids": [i.strip() for i in ([ids] if isinstance(ids, str) else ids if isinstance(ids, list) else [])
+                             if isinstance(i, str) and i.strip()],
             "confidence": confidence if confidence in _CONFIDENCE else "low",
             "risk": risk if risk in _RISKS else None,
             "agent": agent,  # kept so the answer can group claims by specialist
@@ -183,6 +195,6 @@ def parse_agent_result(raw: Any, agent: str) -> dict[str, Any]:
     # claims: a claim "the tool failed" cites no evidence and would wrongly look
     # unsupported. M3's gaps are full sentences (airport, tool, reason), so the
     # cap only guards against runaway model output.
-    unavailable = [_clip(item.strip()) for item in unavailable if isinstance(item, str) and item.strip()]
+    unavailable = [_clip(text) for text in (_gap_text(item) for item in unavailable) if text]
     return {"agent": agent, "claims": claims, "needs_human": needs_human,
             "unavailable": unavailable[:MAX_GAPS]}

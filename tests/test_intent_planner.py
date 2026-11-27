@@ -249,6 +249,17 @@ def test_alternatives_are_conditional_only_for_assess():
     assert plan["alternatives"].condition is None
 
 
+@pytest.mark.parametrize("deadline", ["9pm today", "9pm on Friday", "Friday 9pm", "Friday at 9pm"])
+def test_deadline_accepts_clock_before_or_after_the_day(deadline):
+    goal = _goal(intent="plan_trip", origin="JFK", destination="SFO", deadline_text=deadline)
+    assert goal.missing == [] and goal.arrive_by.endswith("21:00-08:00")
+
+
+def test_plan_trip_ends_with_human_approval():
+    plan = _plan(intent="plan_trip", origin="JFK", destination="SFO", date_text="tomorrow")
+    assert plan[-1].agent == "human_approval" and "option" in plan[-1].goal
+
+
 def test_rebook_ends_with_human_approval():
     plan = _plan(intent="rebook", origin="EWR", destination="LAX", date_text="today", flight_number="UA 1532")
     assert plan[-1].agent == "human_approval"
