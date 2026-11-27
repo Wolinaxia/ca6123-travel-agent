@@ -273,10 +273,8 @@ def mutate_risk_downplayed(claim: dict[str, Any], agent: str,
 
 
 def mutate_normal_vs_program(claim: dict[str, Any], store: Any) -> Optional[dict[str, Any]]:
-    normalised = _normalise_store(store)
     for evidence_id, evidence in _cited_evidence(claim, store):
-        record = normalised.get(evidence_id) or {}
-        source = str(record.get("source") or evidence.get("source") or "")
+        source = str(evidence.get("source") or "")
         data = evidence.get("data") or {}
         if source != "faa_nas" or not data.get("program"):
             continue
@@ -479,6 +477,7 @@ def prepare_record(record: dict[str, Any], labels: dict[str, str],
             "claim": claim,
             "label": labels.get(claim_id, ""),
             "status": verdict.get("status"),
+            "reason": verdict.get("reason"),
         })
     return {
         "id": record.get("id"),
@@ -609,6 +608,37 @@ def compute_arm_a(prepared: list[dict[str, Any]]) -> dict[str, Any]:
 
     return {"on": _rates(on), "off": _rates(off), "by_scenario": scenario_report,
             "headline_shift": headline_shift}
+
+
+def _normalise_reason(reason: Any) -> str:
+    return re.sub(r"\d+", "N", str(reason or ""))
+
+
+def compute_held_by_reason(prepared: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    groups: dict[tuple[str, str], dict[str, Any]] = {}
+    for record in prepared:
+        if record.get("turn_without_claims"):
+            continue
+        for item in record.get("claims") or []:
+            label = item.get("label") or ""
+            if not label or item.get("status") == "supported":
+                continue
+            status = str(item.get("status") or "")
+            reason = _normalise_reason(item.get("reason"))
+            group = groups.setdefault(
+                (status, reason),
+                {"status": status, "reason": reason, "correct": 0, "wrong": 0},
+            )
+            if label == "correct":
+                group["correct"] += 1
+            else:
+                group["wrong"] += 1
+
+    rows = list(groups.values())
+    for row in rows:
+        row["count"] = row["correct"] + row["wrong"]
+    rows.sort(key=lambda row: (-row["count"], row["status"], row["reason"]))
+    return rows
 
 
 def compute_arm_b(prepared: list[dict[str, Any]],
@@ -743,7 +773,8 @@ def label_text_mismatches(records: list[dict[str, Any]], path: Path = LABELS) ->
 def build_report(records: list[dict[str, Any]], labels: dict[str, str],
                  engine: Callable[..., dict] = live.assess_trip_risk,
                  commit: Optional[str] = None, model: Optional[str] = None,
-                 allow_unlabelled: bool = False) -> dict[str, Any]:
+                 allow_unlabelled: bool = False,
+                 labeller: str = "not recorded") -> dict[str, Any]:
     prepared: list[dict[str, Any]] = []
     mismatches: list[str] = []
     turns_without_claims: list[str] = []
@@ -779,6 +810,7 @@ def build_report(records: list[dict[str, Any]], labels: dict[str, str],
     return {
         "git_commit": commit or git_commit(),
         "model": model or str(DEFAULT_MODEL),
+        "labeller": labeller,
         "generated_at": _now(),
         "records": len(prepared),
         "records_with_error": errors,
@@ -790,6 +822,7 @@ def build_report(records: list[dict[str, Any]], labels: dict[str, str],
                         "mismatching_ids": mismatches},
         "arm_a": compute_arm_a(prepared),
         "arm_b": compute_arm_b(prepared),
+        "held_claims_by_reason": compute_held_by_reason(prepared),
     }
 
 
@@ -814,6 +847,8 @@ def render_markdown(report: dict[str, Any]) -> str:
     on, off = arm_a["on"], arm_a["off"]
     lines = [
         "# Verifier ablation (M1)",
+        "",
+        f"Labels: {report.get('labeller') or 'not recorded'}  ",
         "",
         f"Generated: {report['generated_at']}  ",
         f"Git: `{report['git_commit']}` · model: `{report['model']}` · "
@@ -878,6 +913,23 @@ def render_markdown(report: dict[str, Any]) -> str:
 
     lines += [
         "",
+        "## Held claims by Verifier reason",
+        "",
+    ]
+    held_by_reason = report.get("held_claims_by_reason") or []
+    if not held_by_reason:
+        lines.append("None.")
+    else:
+        lines += [
+            "| Status | Reason | Correct | Wrong | Total |",
+            "|---|---|---|---|---|",
+        ]
+        for row in held_by_reason:
+            lines.append(f"| {row['status']} | {row['reason'] or '(no reason)'} "
+                         f"| {row['correct']} | {row['wrong']} | {row['count']} |")
+
+    lines += [
+        "",
         "## Arm B: injected faults",
         "",
         f"Base claims: {arm_b['base_claims']}. Correct claims excluded for not being supported: "
@@ -892,6 +944,10 @@ def render_markdown(report: dict[str, Any]) -> str:
         lines.append(f"| {name} | {'yes' if details['in_scope'] else 'no'} "
                      f"| {details['applicable']} | {details['caught']} "
                      f"| {_rate_cell(details['catch_rate'])} |")
+    zero_applicable = [name for name, in_scope in FAULTS
+                       if in_scope and arm_b["faults"][name]["applicable"] == 0]
+    if zero_applicable:
+        lines += ["", f"No applicable base claims for: {', '.join(zero_applicable)}."]
     overall = arm_b["in_scope_catch_rate"]
     lines += [
         "",
@@ -914,7 +970,8 @@ def render_markdown(report: dict[str, Any]) -> str:
         "## Limitations",
         "",
         "- Single run per request.",
-        "- One labeller.",
+        f"- One labeller ({report.get('labeller') or 'not recorded'}); Arm A's \"wrong\" means "
+        "wrong according to that labeller.",
         "- M4's two extra approval-card checks are excluded.",
         "- Three recorded scenarios on one route (New York ↔ Boston).",
         "",
@@ -992,7 +1049,8 @@ def render_svg(arm_b: dict[str, Any]) -> str:
 
 def run_score(raw_path: Path = RAW, labels_path: Path = LABELS, out_dir: Path = RESULTS,
               allow_unlabelled: bool = False,
-              engine: Callable[..., dict] = live.assess_trip_risk) -> int:
+              engine: Callable[..., dict] = live.assess_trip_risk,
+              labeller: str = "not recorded") -> int:
     if not raw_path.exists():
         print(f"missing raw file: {raw_path} (run `collect` first)", file=sys.stderr)
         return 1
@@ -1021,7 +1079,7 @@ def run_score(raw_path: Path = RAW, labels_path: Path = LABELS, out_dir: Path = 
     model = next((record.get("model") for record in records if record.get("model")), str(DEFAULT_MODEL))
     commit = next((record.get("git_commit") for record in records if record.get("git_commit")), None)
     report = build_report(records, labels, engine=engine, commit=commit, model=model,
-                          allow_unlabelled=allow_unlabelled)
+                          allow_unlabelled=allow_unlabelled, labeller=labeller)
 
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "ablation.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
@@ -1052,6 +1110,8 @@ def build_parser() -> argparse.ArgumentParser:
     score_parser = subparsers.add_parser("score", help="score the labelled raw file")
     score_parser.add_argument("--allow-unlabelled", action="store_true",
                               help="exclude unlabelled claims instead of failing")
+    score_parser.add_argument("--labeller", default="not recorded",
+                              help="name recorded in the report (default: not recorded)")
     score_parser.set_defaults(func=_cmd_score)
     return parser
 
@@ -1084,7 +1144,7 @@ def _cmd_sheet(args: argparse.Namespace) -> int:
 
 
 def _cmd_score(args: argparse.Namespace) -> int:
-    return run_score(allow_unlabelled=args.allow_unlabelled)
+    return run_score(allow_unlabelled=args.allow_unlabelled, labeller=args.labeller)
 
 
 def main(argv: Optional[list[str]] = None) -> int:

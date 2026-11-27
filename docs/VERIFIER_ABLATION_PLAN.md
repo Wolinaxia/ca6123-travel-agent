@@ -90,3 +90,29 @@ We expect it to get through, and it shows where the Verifier's coverage ends.
 - **Chart.** SVG written by the script itself (no plotting dependency), not PNG.
 - **Rule-engine evidence** is not saved in the session state; scoring recomputes it from the
   recorded scenario (deterministic).
+
+## Deviation, 28 Nov (written before any label exists)
+- **Labeller.** Arm A labels are produced by Gemini (through Antigravity), not by me as planned; I did
+  not have the time. The labeller sees the same blind sheet (claim, cited evidence, no Verifier output)
+  and the written rules in the hand-off letter (kept with the results). It has no access to the repo or
+  to the Verifier's verdicts.
+- **What this changes.** The labels are an LLM's judgement, so Arm A's "wrong" is "wrong according to an
+  independent LLM reading the cited evidence", not human ground truth. The report must say so. Arm B is
+  less affected: its faults are injected, and the labels only select which claims are used as the base.
+- **Check, if time allows.** I label a random sample of about 25 claims myself, blind to both the
+  Verifier and the LLM labels, and report the agreement.
+- **Collection.** The first collection (233 claims) was discarded before labelling because it exposed two
+  parsing bugs that removed weather claims and flight citations (fixed in #18 and #20). The run used for
+  the results is the second one (260 claims, commit `968e3cc`). Requests and design were not changed.
+
+## Outcome, 28 Nov
+- Results and how to read them: `eval/README.md`, section "Verifier ablation (M1)". Files:
+  `eval/results/ablation_before_fix.md` and `ablation.md` (same claims and labels, Verifier before and
+  after #22), `ablation_raw.jsonl`, `ablation_labels.csv`, `ablation_labelling_rules.md`.
+- Against the expectations written above: injected-fault catch rate 92% (expected at least 90%), controls
+  all supported. The false hold rate on real claims was 26%, above the 20% line, and is reported as a cost.
+- **Deviation from "we do not tune the Verifier on these labels":** the two causes of the false holds
+  were fixed in the Verifier (#22) after seeing the result, and the fix was developed against these same
+  claims. Both result sets are reported; the second is not a held-out measurement.
+- The human sample check listed under "Deviation, 28 Nov" was not done.
+- The `normal_vs_program` sentence was not changed, and the Verifier was not extended to match it (0/46).

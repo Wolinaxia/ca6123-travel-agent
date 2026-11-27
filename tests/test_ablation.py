@@ -156,6 +156,25 @@ def test_normal_vs_program_applies_only_to_a_cited_faa_program():
     assert ablation.mutate_normal_vs_program(CLAIM_SHOWERS, STORE) is None
 
 
+def test_normal_vs_program_reads_the_evidence_source_not_the_storing_tool():
+    store = {
+        FAA_ID: {
+            "evidence": {
+                "id": FAA_ID,
+                "source": "faa_nas",
+                "subject": "LGA",
+                "observation": "Ground Delay Program at LGA, average delay 148 min",
+                "data": {"program": "GDP", "avg_delay_min": 148},
+            },
+            "tool_ok": True,
+            "source": "deadline_planner",
+        },
+    }
+    mutated = ablation.mutate_normal_vs_program(CLAIM_GDP, store)
+    assert mutated is not None
+    assert mutated["text"] == "LGA is operating normally with no FAA delays."
+
+
 def test_wrong_time_window_replaces_the_first_phrase():
     mutated = ablation.mutate_wrong_time_window(CLAIM_EVENING)
     assert mutated is not None
@@ -390,6 +409,27 @@ def test_headline_shift_treats_unknown_as_below_low():
     assert shift["off_overall_risk"] == "high"
 
 
+def test_held_claims_group_by_reason_with_numbers_normalised():
+    prepared = [{
+        "id": "r1", "scenario": "s1", "intent": "assess_trip",
+        "turn_without_claims": False,
+        "claims": [
+            {"claim_id": "r1:weather:0", "agent": "weather", "label": "correct",
+             "status": "contradicted",
+             "reason": "states 26 mph but cited evidence does not"},
+            {"claim_id": "r1:weather:1", "agent": "weather", "label": "wrong_number",
+             "status": "contradicted",
+             "reason": "states 25 mph but cited evidence does not"},
+        ],
+    }]
+    rows = ablation.compute_held_by_reason(prepared)
+    assert len(rows) == 1
+    assert rows[0]["reason"] == "states N mph but cited evidence does not"
+    assert rows[0]["correct"] == 1
+    assert rows[0]["wrong"] == 1
+    assert rows[0]["count"] == 2
+
+
 def test_turns_without_claims_are_reported_and_excluded_from_escalation():
     no_claims = {
         "id": "c1", "scenario": "", "intent": "plan_trip",
@@ -468,6 +508,45 @@ def test_score_fails_on_unlabelled_claims_and_allows_excluding_them(tmp_path):
     root = ET.fromstring(svg)
     assert root.tag.endswith("svg")
     assert (out / "ablation.md").read_text(encoding="utf-8").startswith("# Verifier ablation")
+
+
+def test_score_records_the_labeller_and_defaults_when_omitted(tmp_path):
+    raw = tmp_path / "raw.jsonl"
+    labels_path = tmp_path / "labels.csv"
+    _write_raw(raw, [_record()])
+    _write_labels(labels_path,
+                  {"t1:flight_airport:0": "correct", "t1:flight_airport:1": "correct"},
+                  records=[_record()])
+
+    named = tmp_path / "named"
+    assert ablation.run_score(raw, labels_path, named, engine=_engine, labeller="Alice") == 0
+    report = json.loads((named / "ablation.json").read_text(encoding="utf-8"))
+    assert report["labeller"] == "Alice"
+    markdown = (named / "ablation.md").read_text(encoding="utf-8")
+    assert "Labels: Alice" in markdown
+    assert "One labeller (Alice);" in markdown
+
+    default = tmp_path / "default"
+    assert ablation.run_score(raw, labels_path, default, engine=_engine) == 0
+    report = json.loads((default / "ablation.json").read_text(encoding="utf-8"))
+    assert report["labeller"] == "not recorded"
+    markdown = (default / "ablation.md").read_text(encoding="utf-8")
+    assert "Labels: not recorded" in markdown
+    assert "One labeller (not recorded);" in markdown
+
+
+def test_zero_applicable_in_scope_fault_is_called_out():
+    record = _record()
+    record["id"] = "z1"
+    record["specialist_results"] = {
+        "flight_airport": {"agent": "flight_airport", "claims": [CLAIM_EVENING],
+                           "needs_human": False, "unavailable": []},
+    }
+    labels = {"z1:flight_airport:0": "correct"}
+    report = ablation.build_report([record], labels, engine=_engine)
+    assert report["arm_b"]["faults"]["wrong_number"]["applicable"] == 0
+    markdown = ablation.render_markdown(report)
+    assert "No applicable base claims for: wrong_number." in markdown
 
 
 def test_score_rejects_labels_whose_claim_text_is_stale(tmp_path, capsys):
