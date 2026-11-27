@@ -10,6 +10,7 @@ from google import genai
 from google.adk.runners import InMemoryRunner
 
 from tests.test_adk_wiring import ScriptedModel, _call_response, _run, _text_response
+from travel_agent.agents.specialists import parse_agent_result
 from travel_agent.agents.weather import _missing_forecast_intervals, build_weather_agent
 from travel_agent.core.models import NwsAlert, SourceResult
 from travel_agent.guardrails.callbacks import assert_guarded
@@ -224,6 +225,41 @@ def test_same_nws_alert_at_both_airports(monkeypatch):
         record, = responses[ALERT, code]["evidence"]
         assert record["id"] == eid and visible[eid]["subject"] == code
         assert record["data"]["nws_alert_id"] == alert.id
+
+
+def test_numeric_confidence_from_the_model_keeps_weather_claims():
+    goal = {"origin_airport": "JFK", "destination_airport": "SFO", "departure_window": "evening",
+            "departure_date": "2026-11-23", "days_ahead": 2}
+    task = "Check both airport windows and disclose coverage gaps."
+    reply = {"agent": "weather", "claims": [
+        {"text": "At 02:18 EST on November 21, JFK had no active weather alerts.",
+         "evidence_ids": [JFK_CLEAR], "confidence": 1.0},
+    ]}
+    model = ScriptedModel(script=[
+        *[_call_response(name, {"airport": airport}) for name, airport in NEAR],
+        _text_response(json.dumps(reply)),
+    ])
+    agent = build_weather_agent(model)
+    assert_guarded(agent)
+    runner = InMemoryRunner(agent=agent, app_name="test")
+
+    async def scenario():
+        session = await runner.session_service.create_session(
+            app_name="test", user_id="u",
+            state={"trip_goal": goal, "plan": [{"agent": "flight_airport", "goal": "Inspect FAA."},
+                                               {"agent": "weather", "goal": task}]},
+        )
+        await _run(runner, session, "Assess this trip.")
+        fresh = await runner.session_service.get_session(app_name="test", user_id="u", session_id=session.id)
+        return fresh.state
+
+    state = asyncio.run(scenario())
+    output = parse_agent_result(state["result_weather"], "weather")
+    assert "error" not in output
+    assert output["claims"] == [{"text": reply["claims"][0]["text"], "evidence_ids": [JFK_CLEAR],
+                                 "confidence": "high", "risk": None, "agent": "weather"}]
+    instruction = model.seen[0].model_dump_json()
+    assert all(word in instruction for word in ("low", "medium", "high"))
 
 
 @pytest.mark.parametrize("second_start, expected_gap", [

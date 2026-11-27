@@ -20,6 +20,7 @@ claims with ``evidence_ids`` is dropped, never repaired by guessing.
 from __future__ import annotations
 
 import json
+import math
 import re
 from typing import Any, Callable
 
@@ -142,6 +143,38 @@ def _clip(text: str) -> str:
     return text if len(text) <= MAX_GAP_CHARS else text[:MAX_GAP_CHARS - 1] + "…"
 
 
+def _confidence_level(value: Any) -> str:
+    """Map a model's confidence (word or number) to a level without losing the claim."""
+    if isinstance(value, str):
+        level = value.strip().lower()
+        return level if level in _CONFIDENCE else "low"
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return "low"
+    try:
+        score = float(value)
+    except (OverflowError, ValueError, TypeError):
+        return "low"
+    if not math.isfinite(score) or score < 0:
+        return "low"
+    if score > 1:
+        if score <= 100:
+            score /= 100
+        else:
+            return "low"
+    if score >= 0.8:
+        return "high"
+    if score >= 0.5:
+        return "medium"
+    return "low"
+
+
+def _risk_level(value: Any) -> str | None:
+    if not isinstance(value, str):
+        return None
+    level = value.strip().lower()
+    return level if level in _RISKS else None
+
+
 def parse_specialist_json(text: str) -> Any:
     """Decode a specialist message using the orchestrator's JSON and fence rules."""
     fenced = _FENCE.search(text)
@@ -178,17 +211,17 @@ def parse_agent_result(raw: Any, agent: str) -> dict[str, Any]:
             continue
         ids = item.get("evidence_ids")
         risk = item.get("risk")
-        confidence = item.get("confidence")
-        if not (risk is None or isinstance(risk, str)) or not isinstance(confidence, (str, type(None))):
-            return {"agent": agent, "claims": [], "needs_human": True,
-                    "error": f"could not parse {agent} output (invalid claim fields)"}
+        # A mistyped risk can no longer be shown, so escalate rather than
+        # silently drop what may have been a risk signal.
+        if risk is not None and not isinstance(risk, str):
+            needs_human = True
         claims.append({
             "text": item["text"].strip(),
             # A lone id string is a common model slip; keep it rather than lose the citation.
             "evidence_ids": [i.strip() for i in ([ids] if isinstance(ids, str) else ids if isinstance(ids, list) else [])
                              if isinstance(i, str) and i.strip()],
-            "confidence": confidence if confidence in _CONFIDENCE else "low",
-            "risk": risk if risk in _RISKS else None,
+            "confidence": _confidence_level(item.get("confidence")),
+            "risk": _risk_level(risk),
             "agent": agent,  # kept so the answer can group claims by specialist
         })
     # Failed sources and coverage gaps are disclosed to the user but are not
