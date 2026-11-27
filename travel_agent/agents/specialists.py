@@ -126,6 +126,17 @@ MAX_GAP_CHARS = 160
 MAX_GAPS = 12
 _RISKS = {"low", "moderate", "high"}
 _CONFIDENCE = {"low", "medium", "high"}
+_EVIDENCE_ALIASES = ("exact_evidence_ids", "evidence_id", "evidence", "citations")
+
+
+def _claim_evidence_ids(item: dict[str, Any]) -> Any:
+    """Read the citation field, tolerating the aliases models use for ``evidence_ids``."""
+    ids = item.get("evidence_ids")
+    if ids is None:
+        for alias in _EVIDENCE_ALIASES:
+            if alias in item:
+                return item[alias]
+    return ids
 
 
 def _gap_text(item: Any) -> str:
@@ -209,7 +220,7 @@ def parse_agent_result(raw: Any, agent: str) -> dict[str, Any]:
     for item in raw_claims:
         if not isinstance(item, dict) or not isinstance(item.get("text"), str) or not item["text"].strip():
             continue
-        ids = item.get("evidence_ids")
+        ids = _claim_evidence_ids(item)
         risk = item.get("risk")
         # A mistyped risk can no longer be shown, so escalate rather than
         # silently drop what may have been a risk signal.
