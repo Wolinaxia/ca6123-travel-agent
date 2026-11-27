@@ -9,10 +9,11 @@ from google import genai
 from google.adk.runners import InMemoryRunner
 
 from tests.test_adk_wiring import ScriptedModel, _call_response, _run, _text_response
+from travel_agent.agents.flight_airport import _instruction as flight_instruction
 from travel_agent.agents.flight_airport import build_flight_airport_agent
 from travel_agent.agents.orchestrator import run_pipeline
 from travel_agent.agents.perceive import filter_tool_result
-from travel_agent.agents.specialists import build_placeholder_specialist
+from travel_agent.agents.specialists import build_placeholder_specialist, parse_agent_result
 from travel_agent.core.models import FaaClosure
 from travel_agent.guardrails.callbacks import assert_guarded
 from travel_agent.schemas import AgentResult, Claim
@@ -238,3 +239,43 @@ def test_compare_nyc_departures_uses_each_route_and_discloses_missing_history():
         assert (data["origin"], data["destination"], data["basis"], data["flights"]) == (origin, "SFO", "2025-09", flights)
         assert round(100 * data["dep_del15"], 1) == percent
     assert responses[-1] == {"source": "bts", "ok": False, "evidence": [], "error": gap}
+
+
+class _PromptContext:
+    def __init__(self, state):
+        self.state = state
+
+
+def test_prompt_names_the_evidence_key_literally():
+    instruction = flight_instruction(_PromptContext({
+        "trip_goal": GOAL, "plan": [{"agent": "flight_airport", "goal": "Assess the flight."}]}))
+    assert '"evidence_ids"' in instruction
+    assert "exact evidence_ids" not in instruction
+
+
+def test_exact_evidence_ids_from_the_model_carries_the_ids():
+    faa = "faa_nas:SFO:GDP:0"
+    reply = {"agent": "flight_airport", "needs_human": False, "claims": [
+        {"text": "At 09:10 PDT on September 23, the SFO ground delay program averaged 34 minutes.",
+         "exact_evidence_ids": [faa], "confidence": "high", "risk": "moderate"},
+    ]}
+    model = ScriptedModel(script=[
+        _call_response("get_airport_delays", {"airport": "SFO"}),
+        _text_response(json.dumps(reply)),
+    ])
+    agent = build_flight_airport_agent(model)
+    assert_guarded(agent)
+    runner = InMemoryRunner(agent=agent, app_name="test")
+
+    async def scenario():
+        state = {"trip_goal": GOAL, "plan": [{"agent": "flight_airport", "goal": "Assess the flight."}]}
+        session = await runner.session_service.create_session(app_name="test", user_id="u", state=state)
+        await _run(runner, session, "Assess the flight.")
+        return await runner.session_service.get_session(app_name="test", user_id="u", session_id=session.id)
+
+    state = asyncio.run(scenario())
+    parsed = parse_agent_result(state.state["result_flight_airport"], "flight_airport")
+    claim, = parsed["claims"]
+    assert claim["evidence_ids"] == [faa]
+    verdicts = verify_claims(parsed["claims"], state.state["evidence_store"])["verdicts"]
+    assert [verdict["status"] for verdict in verdicts] == ["supported"]

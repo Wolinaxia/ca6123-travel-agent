@@ -11,6 +11,7 @@ from google.adk.runners import InMemoryRunner
 
 from tests.test_adk_wiring import ScriptedModel, _call_response, _run, _text_response
 from travel_agent.agents.specialists import parse_agent_result
+from travel_agent.agents.weather import _instruction as weather_instruction
 from travel_agent.agents.weather import _missing_forecast_intervals, build_weather_agent
 from travel_agent.core.models import NwsAlert, SourceResult
 from travel_agent.guardrails.callbacks import assert_guarded
@@ -282,3 +283,18 @@ def test_nws_periods_and_daily_forecast_cover_a_window_together(second_start, ex
     ]
     missing = _missing_forecast_intervals(window, forecasts)
     assert missing == [(local(29, start), local(29, end)) for start, end in expected_gap]
+
+
+class _PromptContext:
+    def __init__(self, state):
+        self.state = state
+
+
+def test_prompt_names_the_evidence_key_literally():
+    instruction = weather_instruction(_PromptContext({
+        "trip_goal": {"origin_airport": "JFK", "destination_airport": "SFO",
+                      "departure_date": "2026-11-23", "days_ahead": 2},
+        "plan": [{"agent": "weather", "goal": "Check both airport windows."}],
+    }))
+    assert '"evidence_ids"' in instruction
+    assert "exact evidence_ids" not in instruction
