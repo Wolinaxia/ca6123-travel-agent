@@ -273,12 +273,59 @@ def test_parse_agent_result_garbage_escalates():
 
 @pytest.mark.parametrize("raw", [
     {"claims": 1},
-    {"claims": [{"text": "No alerts", "risk": {}}]},
-    {"claims": [{"text": "No alerts", "confidence": []}]},
 ])
 def test_invalid_specialist_field_types_escalate(raw):
     result = parse_agent_result(raw, "weather")
     assert result["needs_human"] is True and result["claims"] == [] and result["error"]
+
+
+@pytest.mark.parametrize("confidence, expected", [
+    (1.0, "high"),
+    (0.9, "high"),
+    (0.5, "medium"),
+    (0.2, "low"),
+    (85, "high"),
+    (True, "low"),
+    ([1], "low"),
+    ("High", "high"),
+    (10 ** 400, "low"),
+    (float("nan"), "low"),
+    (float("inf"), "low"),
+    (-1, "low"),
+    (101, "low"),
+])
+def test_mistyped_confidence_is_mapped_and_the_claim_kept(confidence, expected):
+    result = parse_agent_result({"claims": [_claim("ok", ["a"], confidence=confidence)]}, "weather")
+    assert "error" not in result
+    assert result["claims"][0]["text"] == "ok"
+    assert result["claims"][0]["confidence"] == expected
+
+
+@pytest.mark.parametrize("risk", [2, ["high"]])
+def test_non_string_risk_drops_the_risk_and_escalates(risk):
+    result = parse_agent_result({"claims": [_claim("ok", ["a"], risk=risk)]}, "weather")
+    assert "error" not in result
+    assert len(result["claims"]) == 1 and result["claims"][0]["text"] == "ok"
+    assert result["claims"][0]["risk"] is None and result["claims"][0]["confidence"] == "high"
+    assert result["needs_human"] is True
+
+
+def test_unknown_risk_string_stays_null_without_escalating():
+    result = parse_agent_result({"claims": [_claim("ok", ["a"], risk="severe")]}, "weather")
+    assert "error" not in result
+    assert result["claims"][0]["risk"] is None
+    assert result["needs_human"] is False
+
+
+def test_numeric_confidence_does_not_discard_sibling_claims():
+    raw = {"claims": [
+        {"text": "numeric", "evidence_ids": ["a"], "confidence": 0.9},
+        {"text": "fine", "evidence_ids": ["b"], "confidence": "high"},
+    ]}
+    result = parse_agent_result(raw, "weather")
+    assert "error" not in result
+    assert [claim["text"] for claim in result["claims"]] == ["numeric", "fine"]
+    assert [claim["confidence"] for claim in result["claims"]] == ["high", "high"]
 
 
 def test_unparseable_specialist_output_is_shown_as_needing_a_check():
