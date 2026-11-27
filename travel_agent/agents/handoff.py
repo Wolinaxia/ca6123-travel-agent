@@ -125,9 +125,18 @@ def proposal_fields(raw: Any) -> dict[str, Any]:
 # Replies to a pending proposal
 # --------------------------------------------------------------------------
 
-_APPROVE = re.compile(r"^(?:i\s+)?(?:approve|approved|yes|yep|ok(?:ay)?|confirm|go ahead|book it|do it)\b", re.I)
-_ACKNOWLEDGE = re.compile(r"\b(?:anyway|despite|accept(?:ing)? the warnings?|acknowledge[ds]?|i understand)\b", re.I)
-_REJECT = re.compile(r"^(?:reject|rejected|no|nope|don'?t|do not|cancel)\b[\s:,.-]*", re.I)
+# Approval must be the whole reply: consent words, optionally an acknowledgement
+# of the warnings, and nothing else. "ok what about the train" or "yes but don't
+# book yet" are not consent, so they fall through to change / new request.
+_SEP = r"[\s,.!-]*"
+_CONSENT = r"(?:i\s+)?(?:approve[ds]?|yes|yep|yeah|sure|ok(?:ay)?|confirm(?:ed)?|go ahead|book it|do it)"
+_ACK = (r"(?:anyway|anyways|despite the warnings?|(?:i\s+)?accept(?:ing)? the (?:warnings?|risks?)|"
+        r"(?:i\s+)?acknowledge(?:d)?(?: the (?:warnings?|risks?))?|i understand(?: the (?:warnings?|risks?))?)")
+_APPROVE = re.compile(rf"^(?:(?:no problem|no worries|great|perfect){_SEP})?{_CONSENT}(?:{_SEP}{_CONSENT})*"
+                      rf"(?P<ack>{_SEP}{_ACK})?(?:{_SEP}please)?{_SEP}$", re.I)
+_FILLER = re.compile(r"^(?:ok(?:ay)?|so|well|hmm+|um+)\b[\s,.!-]*", re.I)
+_REJECT = re.compile(r"^(?!no (?:problem|worries)\b)(?:reject|rejected|no|nope|don'?t|do not|cancel)\b[\s:,.-]*",
+                     re.I)
 _EXPLAIN = re.compile(r"^(?:why|explain|how come)\b", re.I)
 _CHANGE = re.compile(r"^(?:change|instead|what about|how about|can you|could you|i'?d rather|i prefer|prefer|avoid|"
                      r"take|try|show me)\b", re.I)
@@ -138,8 +147,10 @@ def parse_decision(text: str) -> Optional[dict[str, Any]]:
     reply = (text or "").strip()
     if not reply or len(reply) > 300:
         return None
-    if _APPROVE.match(reply):
-        return {"kind": "approve", "acknowledge": bool(_ACKNOWLEDGE.search(reply))}
+    approve = _APPROVE.match(reply)
+    if approve:
+        return {"kind": "approve", "acknowledge": bool(approve.group("ack"))}
+    reply = _FILLER.sub("", reply, count=1) or reply  # "ok, what about the train" -> change
     if _EXPLAIN.match(reply):
         return {"kind": "explain"}
     reject = _REJECT.match(reply)

@@ -198,10 +198,22 @@ def test_deadline_inputs_with_and_without_a_stated_deadline():
     ("approve", "approve"), ("Yes, book it", "approve"), ("why?", "explain"),
     ("reject: too early", "reject"), ("no", "reject"), ("take the train instead", "change"),
     ("How bad are delays from JFK to SFO today?", None),
+    ("OK, go ahead.", "approve"), ("approve, I accept the warnings", "approve"), ("no problem, go ahead", "approve"),
+    # Anything beyond consent is not consent (review of PR #15).
+    ("ok what about the train instead", "change"), ("yes but don't book yet", None),
+    ("confirm that nothing is booked yet?", None), ("OK so is OAK far from downtown?", None),
+    ("do it later, not now", None), ("yes?", None), ("approve the cheaper one", None),
 ])
 def test_parse_decision(text, kind):
     decision = handoff.parse_decision(text)
     assert (decision or {}).get("kind") == kind
+
+
+def test_a_question_starting_with_ok_is_a_new_request_not_a_booking(tmp_path):
+    chat, _ = _chat(OAK_SCRIPT, tmp_path, turns=2)
+    chat.send(REQUEST)
+    out = chat.send("OK so is OAK far from downtown?")
+    assert _booking_ids(out) == [] and not out.get("completed_actions")
 
 
 def test_approve_anyway_acknowledges_warnings():
