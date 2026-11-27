@@ -6,6 +6,7 @@ every mutation is a pure function.
 
 from __future__ import annotations
 
+import copy
 import csv
 import json
 import xml.etree.ElementTree as ET
@@ -168,11 +169,85 @@ def test_wrong_time_window_replaces_the_first_phrase():
 def test_sheet_has_exact_columns_and_no_verdict_fields(tmp_path):
     rows = ablation.build_sheet_rows([_record()])
     assert len(rows) == 2
+    assert tuple(rows[0]) == ("claim_id", "scenario", "request", "agent", "claim", "risk",
+                              "confidence", "cited_ids", "evidence", "label", "note")
     assert tuple(rows[0]) == ablation.SHEET_COLUMNS
     forbidden = {"verdict", "status", "reason"}
     assert not (set(rows[0]) & forbidden)
     assert rows[0]["evidence"].startswith(f"{FAA_ID}: Ground Delay Program")
     assert rows[0]["claim_id"] == "t1:flight_airport:0"
+
+
+def test_sheet_shows_numbers_from_data_missing_in_observation():
+    claim = _claim("LGA has a max delay of 362 minutes.", [FAA_ID], "high")
+    record = _record()
+    record["evidence_store"] = copy.deepcopy(record["evidence_store"])
+    record["specialist_results"]["flight_airport"]["claims"] = [claim]
+    record["evidence_store"][FAA_ID]["evidence"]["data"]["max_delay_min"] = 362
+    rows = ablation.build_sheet_rows([record])
+    assert "362" in rows[0]["evidence"]
+    assert "362" not in rows[0]["evidence"].split(" || data: ")[0]
+
+
+def test_sheet_omits_replay_and_scenario_bookkeeping_keys():
+    claim = _claim("LGA has delays.", [FAA_ID], "high")
+    record = _record()
+    record["evidence_store"] = copy.deepcopy(record["evidence_store"])
+    record["specialist_results"]["flight_airport"]["claims"] = [claim]
+    record["evidence_store"][FAA_ID]["evidence"]["data"].update(
+        {"replay": "demo", "scenario": "s1"})
+    rows = ablation.build_sheet_rows([record])
+    assert '"replay"' not in rows[0]["evidence"]
+    assert '"scenario"' not in rows[0]["evidence"]
+
+
+def test_sheet_cuts_long_data_at_1200_characters():
+    claim = _claim("LGA has delays.", [FAA_ID], "high")
+    record = _record()
+    record["evidence_store"] = copy.deepcopy(record["evidence_store"])
+    record["specialist_results"]["flight_airport"]["claims"] = [claim]
+    record["evidence_store"][FAA_ID]["evidence"]["data"]["padding"] = "x" * 2000
+    rows = ablation.build_sheet_rows([record])
+    data_part = rows[0]["evidence"].split(" || data: ", 1)[1]
+    assert len(data_part) == 1201
+    assert data_part.endswith("…")
+
+
+def test_sheet_omits_validity_when_both_ends_are_missing():
+    claim = _claim("LGA has delays.", [FAA_ID], "high")
+    record = _record()
+    record["specialist_results"]["flight_airport"]["claims"] = [claim]
+    rows = ablation.build_sheet_rows([record])
+    assert " || valid: " not in rows[0]["evidence"]
+
+
+def test_sheet_shows_validity_when_present():
+    claim = _claim("LGA has delays.", [FAA_ID], "high")
+    record = _record()
+    record["evidence_store"] = copy.deepcopy(record["evidence_store"])
+    record["specialist_results"]["flight_airport"]["claims"] = [claim]
+    record["evidence_store"][FAA_ID]["evidence"].update(
+        {"valid_from": "2026-11-22T17:00:00+00:00", "valid_to": "2026-11-22T19:00:00+00:00"})
+    rows = ablation.build_sheet_rows([record])
+    assert " || valid: 2026-11-22T17:00:00+00:00..2026-11-22T19:00:00+00:00" in rows[0]["evidence"]
+
+
+def test_sheet_leaves_uncited_claim_visibly_empty():
+    claim = _claim("No citation.", [])
+    record = _record()
+    record["specialist_results"]["flight_airport"]["claims"] = [claim]
+    rows = ablation.build_sheet_rows([record])
+    assert rows[0]["cited_ids"] == ""
+    assert rows[0]["evidence"] == ""
+    assert rows[0]["claim"] == "No citation."
+
+
+def test_sheet_cited_ids_join_with_comma_space():
+    claim = _claim("Both sources.", [FAA_ID, OTHER_ID])
+    record = _record()
+    record["specialist_results"]["flight_airport"]["claims"] = [claim]
+    rows = ablation.build_sheet_rows([record])
+    assert rows[0]["cited_ids"] == f"{FAA_ID}, {OTHER_ID}"
 
 
 def test_sheet_marks_missing_evidence():
