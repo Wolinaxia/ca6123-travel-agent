@@ -8,7 +8,8 @@ flight numbers (``UA 857``), dates, times, prices and distances. So each
 detector is anchored to the shape of a real identifier:
 
 * emails       -- the only thing with an ``@``;
-* payment cards -- 13-19 digits (optionally grouped) that also pass Luhn;
+* payment cards -- 13-19 digits (optionally grouped) that also pass Luhn, but
+  never a decimal fraction (a digit run right after ``<digit>.``);
 * Singapore NRIC/FIN -- one of ``S T F G M``, seven digits, one letter;
 * passports    -- only when the word "passport" precedes the value, because a
   bare ``E12345678`` is indistinguishable from a booking reference;
@@ -36,7 +37,7 @@ PLACEHOLDERS = {
 
 _EMAIL_RE = re.compile(r"(?<![\w.+-])[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+")
 _NRIC_RE = re.compile(r"\b[STFGM]\d{7}[A-Z]\b")
-_CARD_CANDIDATE_RE = re.compile(r"(?<![\w+])(?:\d[ -]?){12,18}\d(?![\w])")
+_CARD_CANDIDATE_RE = re.compile(r"(?<![\w+])(?<!\d\.)(?:\d[ -]?){12,18}\d(?![\w])")
 _PASSPORT_RE = re.compile(
     r"(?i)(\bpassport(?:\s+(?:number|no\.?|num(?:ber)?))?\s*[:#-]?\s*)([A-Z0-9]{6,10})\b"
 )
