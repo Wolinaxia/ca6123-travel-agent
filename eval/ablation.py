@@ -52,7 +52,7 @@ REPORT_SVG = RESULTS / "ablation.svg"
 STATE_KEYS = ("intent", "trip_goal", "specialist_results", "evidence_store",
               "last_verification", "final_answer")
 SHEET_COLUMNS = ("claim_id", "scenario", "request", "agent", "claim", "risk",
-                 "confidence", "evidence", "label", "note")
+                 "confidence", "cited_ids", "evidence", "label", "note")
 ALLOWED_LABELS = ("correct", "wrong_number", "wrong_place", "risk_downplayed",
                   "unsupported", "stale", "other_wrong")
 RISK_ORDER = {"unknown": -1, "low": 0, "moderate": 1, "high": 2}
@@ -332,15 +332,52 @@ def _observation(record: Any) -> str:
     return ""
 
 
+def _compact_data(evidence: dict[str, Any]) -> str:
+    data = evidence.get("data")
+    if not isinstance(data, dict):
+        return ""
+    cleaned = {key: value for key, value in data.items()
+               if key not in ("replay", "scenario")}
+    if not cleaned:
+        return ""
+    text = json.dumps(cleaned, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    if len(text) > 1200:
+        text = text[:1200] + "…"
+    return text
+
+
+def _validity(evidence: dict[str, Any]) -> str:
+    valid_from = evidence.get("valid_from")
+    valid_to = evidence.get("valid_to")
+    if valid_from is None and valid_to is None:
+        return ""
+    return f"{valid_from or ''}..{valid_to or ''}"
+
+
 def _evidence_cell(claim: dict[str, Any], store: Any) -> str:
     normalised = _normalise_store(store)
     parts = []
     for evidence_id in claim.get("evidence_ids") or []:
         evidence_id = str(evidence_id)
         record = normalised.get(evidence_id)
-        parts.append(f"{evidence_id}: {_observation(record)}" if record is not None
-                     else f"{evidence_id}: MISSING")
+        if record is None:
+            parts.append(f"{evidence_id}: MISSING")
+            continue
+        evidence = record.get("evidence")
+        evidence = evidence if isinstance(evidence, dict) else {}
+        text = f"{evidence_id}: {_observation(record)}"
+        data = _compact_data(evidence)
+        if data:
+            text += f" || data: {data}"
+        validity = _validity(evidence)
+        if validity:
+            text += f" || valid: {validity}"
+        parts.append(text)
     return " | ".join(parts)
+
+
+def _cited_ids(claim: dict[str, Any]) -> str:
+    return ", ".join(str(item) for item in claim.get("evidence_ids") or [])
 
 
 def build_sheet_rows(records: list[dict[str, Any]]) -> list[dict[str, str]]:
@@ -361,6 +398,7 @@ def build_sheet_rows(records: list[dict[str, Any]]) -> list[dict[str, str]]:
                     "claim": str(claim.get("text") or ""),
                     "risk": str(claim.get("risk") or ""),
                     "confidence": str(claim.get("confidence") or ""),
+                    "cited_ids": _cited_ids(claim),
                     "evidence": _evidence_cell(claim, store),
                     "label": "",
                     "note": "",
