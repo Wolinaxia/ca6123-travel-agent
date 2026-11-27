@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="360" viewBox="0 0 760 360" font-family="sans-serif">
+<title>Verifier catch rate by injected fault</title>
+<rect width="760" height="360" fill="#ffffff"/>
+<text x="380" y="28" text-anchor="middle" font-size="18" font-weight="bold">Verifier catch rate by injected fault</text>
+<line x1="210.0" y1="72" x2="210.0" y2="316" stroke="#e2e8f0" stroke-width="1"/>
+<text x="210.0" y="66" text-anchor="middle" font-size="11" fill="#4a5568">0%</text>
+<line x1="325.0" y1="72" x2="325.0" y2="316" stroke="#e2e8f0" stroke-width="1"/>
+<text x="325.0" y="66" text-anchor="middle" font-size="11" fill="#4a5568">25%</text>
+<line x1="440.0" y1="72" x2="440.0" y2="316" stroke="#e2e8f0" stroke-width="1"/>
+<text x="440.0" y="66" text-anchor="middle" font-size="11" fill="#4a5568">50%</text>
+<line x1="555.0" y1="72" x2="555.0" y2="316" stroke="#e2e8f0" stroke-width="1"/>
+<text x="555.0" y="66" text-anchor="middle" font-size="11" fill="#4a5568">75%</text>
+<line x1="670.0" y1="72" x2="670.0" y2="316" stroke="#e2e8f0" stroke-width="1"/>
+<text x="670.0" y="66" text-anchor="middle" font-size="11" fill="#4a5568">100%</text>
+<line x1="210" y1="72" x2="210" y2="316" stroke="#4a5568" stroke-width="1"/>
+<text x="202" y="100" text-anchor="end" font-size="12" fill="#1a202c">wrong_number</text>
+<rect x="210" y="87" width="438.7" height="16" fill="#2b6cb0"/>
+<text x="654.7" y="100" font-size="12" fill="#1a202c">103/108</text>
+<text x="202" y="130" text-anchor="end" font-size="12" fill="#1a202c">wrong_airport</text>
+<rect x="210" y="117" width="453.7" height="16" fill="#2b6cb0"/>
+<text x="669.7" y="130" font-size="12" fill="#1a202c">217/220</text>
+<text x="202" y="160" text-anchor="end" font-size="12" fill="#1a202c">fabricated_id</text>
+<rect x="210" y="147" width="460.0" height="16" fill="#2b6cb0"/>
+<text x="676.0" y="160" font-size="12" fill="#1a202c">243/243</text>
+<text x="202" y="190" text-anchor="end" font-size="12" fill="#1a202c">no_citation</text>
+<rect x="210" y="177" width="460.0" height="16" fill="#2b6cb0"/>
+<text x="676.0" y="190" font-size="12" fill="#1a202c">243/243</text>
+<text x="202" y="220" text-anchor="end" font-size="12" fill="#1a202c">risk_downplayed</text>
+<rect x="210" y="207" width="325.2" height="16" fill="#2b6cb0"/>
+<text x="541.2" y="220" font-size="12" fill="#1a202c">41/58</text>
+<text x="202" y="250" text-anchor="end" font-size="12" fill="#1a202c">normal_vs_program</text>
+<rect x="210" y="237" width="0.0" height="16" fill="#2b6cb0"/>
+<text x="216.0" y="250" font-size="12" fill="#1a202c">0/46</text>
+<text x="202" y="300" text-anchor="end" font-size="12" fill="#1a202c">wrong_time_window (out of scope)</text>
+<rect x="210" y="287" width="0.0" height="16" fill="#a0aec0"/>
+<text x="216.0" y="300" font-size="12" fill="#1a202c">0/1</text>
+<text x="440" y="348" text-anchor="middle" font-size="12" fill="#4a5568">Catch rate (% of applicable mutations)</text>
+</svg>

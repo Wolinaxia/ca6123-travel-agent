@@ -74,3 +74,63 @@ Results on 2026-11-22 (`gemini-3.5-flash-lite`):
 This is a development set, not a held-out one. One grounding fix (a city with its
 own airport, e.g. Newark → EWR rather than the New York metro's JFK) was made after
 seeing a failure here.
+
+## Verifier ablation (M1)
+
+Does the Verifier stop wrong claims from reaching the traveller, and what does it cost? Design, the
+expectations written before any run, and every deviation: `docs/VERIFIER_ABLATION_PLAN.md`.
+
+    python -m eval.ablation collect      # 18 fixed requests, real Gemini, recorded scenarios
+    python -m eval.ablation sheet        # blind labelling sheet (no Verifier output in it)
+    python -m eval.ablation score        # ON vs OFF from the same saved claims
+
+**Setup.** 18 fixed requests (`eval/ablation_requests.json`) on three recorded scenarios, one run each:
+260 claims from 16 turns (two requests ended in a clarifying question and have no claims). Each claim was
+labelled against its own cited evidence by Gemini (through Antigravity), blind to the Verifier's output;
+the rules it was given are in `eval/results/ablation_labelling_rules.md`. **The labels are an LLM's
+judgement, not human ground truth**, and no human agreement check was done. Verifier ON and OFF are
+computed from the same saved claims and evidence, so the only difference between the arms is the Verifier.
+
+- **Arm A** (real claims): 253 labelled correct, 7 labelled wrong.
+- **Arm B** (injected faults): six fault types applied to the claims labelled correct, plus one
+  out-of-scope type. Unmodified controls must all stay supported (they do).
+
+**Two result sets.** The first scoring exposed two problems in the Verifier itself, which were then fixed
+(#22). Both sets use the same 260 claims and labels:
+
+| Verifier ON | Before the fix (`ablation_before_fix.md`) | After the fix (`ablation.md`) |
+|---|---|---|
+| Correct claims held back (false holds) | 67/253 (26%) | 10/253 (4%) |
+| Wrong claims held back | 2/7 | 0/7 |
+| Wrong claims among those shown | 5/191 (3%) | 7/250 (3%) |
+| Turns flagged for a human | 14/16 (OFF: 7/16) | 10/16 (OFF: 7/16) |
+| Injected faults caught, six in-scope types | 625/680 (92%) | 847/918 (92%) |
+| fabricated id / no citation | 100% / 100% | 100% / 100% |
+| wrong airport / wrong number | 98% / 94% | 99% / 95% |
+| risk downplayed | 17/25 (68%) | 41/58 (71%) |
+| "operating normally" while a program is active | 0/39 | 0/46 |
+
+**How to read it.**
+
+- The "after" column is **not a held-out result**: the fix was made after seeing the "before" column and
+  was developed against these same claims. It shows the two causes are removed, not how the Verifier does
+  on new data.
+- The Verifier catches structural errors: a citation that does not exist, no citation, the wrong airport,
+  a changed number. The written expectation was at least 90% on injected faults; it is 92% in both sets.
+- It does not catch what the model actually got wrong. The seven claims labelled wrong are semantic
+  (a past case's lesson overstated, scattered cloud called a ceiling, a forecast window described
+  loosely). The two it held before the fix were held by the number bug, not on their merits.
+- Before the fix it held back a quarter of the correct claims, above the 20% line written down in advance
+  as "report it as a cost". The two causes: a single-airport observation was compared with the trip-level
+  risk (40 holds), and numbers in forecast evidence were not read (27 holds).
+- The ten false holds that remain are low-risk observations ("no alerts near LGA") at an airport that has
+  an active FAA program. They are kept on purpose; see `docs/VERIFIER_FALSE_HOLDS_FIX_2.md`.
+- One injected fault is never caught: the sentence "<airport> is operating normally with no FAA delays."
+  The airport-status check matches "operations are running normally" and "no active FAA programs" but not
+  this wording. The sentence was fixed before looking at results and was not changed, and the check was
+  not extended to match it: the row shows that the check is sensitive to phrasing.
+- The out-of-scope fault (wrong time window) had one applicable claim, not caught, as expected.
+
+**Limits.** One run per request; one LLM labeller; three recorded scenarios on a single route (New York ↔
+Boston); the first collection was discarded before labelling because it exposed two parsing bugs (#18,
+#20); M4's two extra checks on the approval card are outside both arms.
