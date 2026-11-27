@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import random
 from types import SimpleNamespace
 
 import pytest
@@ -65,6 +66,33 @@ def test_pii_keeps_luhn_invalid_card():
     text, findings = redact_pii("Card 4111 1111 1111 1112")
     assert "4111 1111 1111 1112" in text
     assert findings == []
+
+
+@pytest.mark.parametrize(
+    "value",
+    ['{"rate": 0.8474337369372327}', "0.763774618976614", "0.762280082457942"],
+)
+def test_pii_keeps_decimal_fractions(value):
+    redacted, findings = redact_pii(value)
+    assert redacted == value
+    assert findings == []
+
+
+def test_pii_keeps_random_floats():
+    rng = random.Random(1234)
+    for _ in range(5000):
+        value = json.dumps(rng.random())
+        redacted, findings = redact_pii(value)
+        assert redacted == value
+        assert findings == []
+
+
+def test_pii_still_redacts_cards_next_to_a_word_dot():
+    for card in ("4111 1111 1111 1111", "5555-5555-5555-4444", "4111111111111111"):
+        redacted, findings = redact_pii(f"Card no.{card}")
+        assert card not in redacted
+        assert "[CARD]" in redacted
+        assert findings[0]["type"] == "card"
 
 
 def test_pii_redacts_nric_and_guarded_passport():
