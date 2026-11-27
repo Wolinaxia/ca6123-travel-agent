@@ -102,8 +102,10 @@ class SubTask:
 # Grounding: raw phrases -> airports and dates
 # --------------------------------------------------------------------------
 
+# "Friday 6pm", "Friday at 6pm", "6pm Friday", "6pm on Friday" or just "6pm".
 _DEADLINE_PARTS = re.compile(
     rf"(?:(?P<day>{DATE_PHRASE})(?:\s+(?:at\s+)?(?P<clock>{CLOCK_PHRASE}))?|"
+    rf"(?P<clock_first>{CLOCK_PHRASE})\s+(?:on\s+)?(?P<day_after>{DATE_PHRASE})|"
     rf"(?P<clock_only>{CLOCK_PHRASE}))", re.I,
 )
 _DEPARTURE_REPLY = re.compile(rf"(?P<day>{DATE_PHRASE})(?:\s+(?P<window>morning|afternoon|evening))?", re.I)
@@ -150,7 +152,7 @@ def _resolve_deadline(phrase: str, departure: date | None, zone: ZoneInfo, now: 
     parts = _DEADLINE_PARTS.fullmatch(phrase.strip().rstrip(".?!"))
     if parts is None:
         return None
-    day_phrase = parts["day"]
+    day_phrase = parts["day"] or parts["day_after"]
     day = departure
     if day_phrase:
         words = day_phrase.lower().split()
@@ -164,7 +166,7 @@ def _resolve_deadline(phrase: str, departure: date | None, zone: ZoneInfo, now: 
     if day is None:
         return None
     try:
-        clock = _resolve_clock(parts["clock"] or parts["clock_only"])
+        clock = _resolve_clock(parts["clock"] or parts["clock_first"] or parts["clock_only"])
     except ValueError:
         return None
     return datetime.combine(day, clock, zone)
@@ -264,9 +266,11 @@ def ground(result: IntentResult, request: str, now: datetime) -> TripGoal:
         else:
             goal.arrive_by = arrive_by.isoformat(timespec="minutes")
 
-    # Departure day: explicit phrase first, otherwise the deadline day.
+    # Departure day: explicit phrase first, otherwise the deadline day. Take the
+    # earlier calendar date: "SF by Friday 9pm" is already Saturday in New York,
+    # but the traveller still leaves on Friday.
     if departure is None and not result.date_text and goal.arrive_by and arrive_by is not None:
-        departure = arrive_by.astimezone(ZoneInfo(origin_tz)).date()
+        departure = min(arrive_by.date(), arrive_by.astimezone(ZoneInfo(origin_tz)).date())
     if departure is None:
         goal.missing.append("departure_date")
         if date_error and result.date_text:
@@ -356,9 +360,10 @@ def build_plan(goal: TripGoal) -> list[SubTask]:
                         depends_on=["t1", "t2", "t3"]))
     plan.append(SubTask("t5", SYNTHESIZER, "Write the answer from supported claims only; flag anything a human must check.",
                         depends_on=["t4"]))
-    if goal.intent == "rebook":
+    if goal.intent in ("plan_trip", "rebook"):
         # The proposal is shown first; only the human can trigger the mock booking.
-        plan.append(SubTask("t6", HUMAN_APPROVAL, "Human approves or rejects the proposed rebooking. "
+        what = "rebooking" if goal.intent == "rebook" else "option"
+        plan.append(SubTask("t6", HUMAN_APPROVAL, f"Human approves or rejects the proposed {what}. "
                             "Nothing is booked without approval.", depends_on=["t5"]))
     return plan
 

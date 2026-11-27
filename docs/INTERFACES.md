@@ -126,13 +126,26 @@ carry the four guardrail callbacks (see `agents.specialists.guarded_callbacks`).
 | `result_<name>` | each specialist (`output_key`) | Raw final message of that specialist. |
 | `specialist_results` | orchestrator | Parsed `AgentResult` dicts per specialist (claims tagged with `agent`). |
 | `rule_assessment` | orchestrator | Deterministic rule-engine result for the trip (`tools.live.assess_trip_risk`, run in parallel with the specialists): `{"risk", "engine_level", "confidence", "action", "evidence_id"}` or `{"error"}`. `risk` maps the engine's `low/elevated/high/severe` onto the claim scale. The engine evidence is added to the Verifier's view only, not to `evidence_store`. |
-| `final_answer` | orchestrator | `{"text", "overall_risk", "rule_risk", "shown_claims", "held_back", "unavailable", "needs_human", "awaiting_approval", "verifier_enabled"}`. `overall_risk` is the higher of the rule engine's level and the shown claims' risks. The analysis flow sets `awaiting_approval=False`. The HITL workflow owns approval for a concrete replacement proposal that it validates for the current trip. |
+| `pending_proposal` | orchestrator | M4 `hitl.Proposal` dict while an approval card is open (`plan_trip`/`rebook`), else null. The next reply (`approve`, `approve anyway`, `reject: <reason>`, `why?`, `take the train instead`) is applied with M4's `hitl` functions instead of planning; any other text is a new request and clears it. |
+| `change_request` | orchestrator | M4 `request_change` message, appended to the alternatives prompt for one re-plan. |
+| `final_answer` | orchestrator | `{"text", "overall_risk", "rule_risk", "shown_claims", "held_back", "unavailable", "needs_human", "awaiting_approval", "proposal", "verifier_enabled"}`. `awaiting_approval` is true only when a verified M4 proposal is attached; its card is appended to `text`. `overall_risk` is the higher of the rule engine's level and the shown claims' risks. The analysis flow sets `awaiting_approval=False`. The HITL workflow owns approval for a concrete replacement proposal that it validates for the current trip. |
 
+`agents.orchestrator.Conversation(scenario=..., ...)` keeps one ADK session for
+several turns (`chat.send(request)`, then `chat.send("approve")`).
 `agents.orchestrator.run_pipeline(request, scenario=None, verifier_enabled=True)`
 runs one request end to end and returns these keys plus `evidence_store` and
 `trace_run_id`. `risk_engine=None` skips the rule engine (offline tests). `verifier_enabled=False` is the ablation "Verifier OFF" arm.
 
 ## M4: Alternatives agent, mock booking, HITL, memory
+
+**Wiring (M2).** `build_orchestrator` uses `agents.handoff.build_m4_alternatives(model)`: M4's agent with the
+planner's trip appended to its prompt (airports, `plan_trip_options` deadline and earliest departure, an
+*assumed* deadline when the user gave none, constraints, flight/weather findings, rule-engine summary). The
+orchestrator reads `result_alternatives`, then M4's `alternatives_result`, and keeps the card fields
+(`recommended_option_id`, Plan B, trigger, ...) in `specialist_results["alternatives"]["proposal"]`.
+`build_proposal` runs on a copy of the state; its verdicts replace only the alternatives verdicts in the
+orchestrator's `last_verification`. Alternatives claims are verified without the rule engine's trip summary:
+that summary scores the planned route, while each alternative cites its own `plan:*` option level.
 
 **Agent.** `travel_agent.agents.alternatives.build_alternatives_agent(model=..., tracer=None, use_cases=True)` returns a
 guarded `LlmAgent` named `alternatives` (all four M1 callbacks; `assert_guarded` passes). It has **no**
