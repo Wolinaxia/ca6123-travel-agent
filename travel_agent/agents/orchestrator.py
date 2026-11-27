@@ -348,7 +348,7 @@ def build_hitl_proposal(
                  "claims": [{k: v for k, v in claim.items() if k != "agent"} for claim in alternatives["claims"]]}
     view = {"evidence_store": store, "hitl_log": list(state.get("hitl_log") or [])}
     try:
-        proposal = hitl.build_proposal(view, m4_result)
+        proposal = hitl.build_proposal(view, m4_result, verify=verification is not None)
     except hitl.ProposalError as exc:
         alternatives["error"] = f"no approval card: {exc}"
         return None, verification, {"hitl_log": view["hitl_log"]}

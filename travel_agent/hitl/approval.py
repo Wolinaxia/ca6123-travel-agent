@@ -52,6 +52,7 @@ from travel_agent.verification.checks import verify_claims
 APPROVAL_TTL_MIN = 15
 MAX_EVIDENCE_AGE_MIN = 30
 BOOKING_TOOL = "book_trip_option"
+VERIFICATION_DISABLED = "verification disabled"
 _BOOKING_FUNCTION_TOOL = FunctionTool(book_trip_option)
 
 _STATUS_MARK = {"supported": "OK", "unsupported": "CHECK", "contradicted": "WRONG"}
@@ -211,12 +212,19 @@ class Proposal:
 # Building the proposal
 # --------------------------------------------------------------------------
 
-def build_proposal(state: Any, result: dict[str, Any], now: datetime | None = None) -> Proposal:
+def build_proposal(
+    state: Any,
+    result: dict[str, Any],
+    now: datetime | None = None,
+    *,
+    verify: bool = True,
+) -> Proposal:
     """Turn the Alternatives agent's JSON into a checked proposal.
 
     Runs the same deterministic checks as the Verifier agent's tool and writes
     them to ``state["last_verification"]`` so the card and the audit log use
-    the authoritative verdicts.
+    the authoritative verdicts. ``verify=False`` (the ablation's OFF arm) skips
+    both checks, writes no ``last_verification`` and leaves ``verdicts`` empty.
     """
     if not isinstance(result, dict):
         raise ProposalError("the agent's answer is not a JSON object; escalate to a human")
@@ -238,8 +246,12 @@ def build_proposal(state: Any, result: dict[str, Any], now: datetime | None = No
             claims.append({**item, "evidence_ids": [str(x) for x in item.get("evidence_ids") or [] if isinstance(x, str)]})
         else:
             malformed = True
-    verification = _m4_checks(claims, verify_claims(claims, _store(state)), _store(state))
-    state["last_verification"] = verification
+    if verify:
+        verification = _m4_checks(claims, verify_claims(claims, _store(state)), _store(state))
+        state["last_verification"] = verification
+    else:
+        verification = {"verdicts": [], "needs_human": False, "summary": VERIFICATION_DISABLED,
+                        "counts": {"supported": 0, "unsupported": 0, "contradicted": 0}}
 
     contingency_evidence = _evidence(state, "plan:contingency") or {}
     contingency = dict(contingency_evidence.get("data") or {})
@@ -316,11 +328,17 @@ def render_card_text(proposal: Proposal) -> str:
         decide = "now" if proposal.contingency.get("decide_now") else proposal.contingency.get("decide_by_local")
         lines.append(f"Switch if: {proposal.contingency['switch_trigger']}" + (f"  (decide by {decide})" if decide else ""))
     if proposal.summary:
-        lines += ["", "Agent summary (not fact-checked, read the checked claims below): " + proposal.summary]
+        if proposal.verification_summary == VERIFICATION_DISABLED:
+            lines += ["", "Agent summary (not fact-checked): " + proposal.summary]
+        else:
+            lines += ["", "Agent summary (not fact-checked, read the checked claims below): " + proposal.summary]
     lines += ["", f"Fact check ({proposal.verification_summary}):"]
-    for claim, verdict in zip(proposal.claims, proposal.verdicts):
-        mark = _STATUS_MARK.get(verdict.get("status"), "?")
-        lines.append(f"  [{mark:5}] {claim.get('text')}")
+    if proposal.verdicts:
+        for claim, verdict in zip(proposal.claims, proposal.verdicts):
+            mark = _STATUS_MARK.get(verdict.get("status"), "?")
+            lines.append(f"  [{mark:5}] {claim.get('text')}")
+    elif proposal.verification_summary == VERIFICATION_DISABLED:
+        lines.append("  Claims were not verified.")
     if proposal.warnings:
         lines += ["", "WARNINGS - read before approving:"] + [f"  ! {item}" for item in proposal.warnings]
     lines += ["", "Choices: approve | reject (say why) | change (ask for something else) | why?", "=" * 64]
@@ -338,6 +356,8 @@ def render_card_html(proposal: Proposal) -> str:
         icon = {"supported": "&#9989;", "unsupported": "&#9888;&#65039;", "contradicted": "&#10060;"}.get(status, "?")
         reason = "" if status == "supported" else f"<br><small style='color:#b3261e'>{esc(str(verdict.get('reason')))}</small>"
         rows.append(f"<tr><td style='vertical-align:top;padding:2px 6px'>{icon}</td><td style='padding:2px 6px'>{esc(str(claim.get('text')))}{reason}</td></tr>")
+    if not proposal.verdicts and proposal.verification_summary == VERIFICATION_DISABLED:
+        rows.append("<tr><td colspan='2' style='padding:2px 6px'>Claims were not verified.</td></tr>")
     warn = ""
     if proposal.warnings:
         items = "".join(f"<li>{esc(item)}</li>" for item in proposal.warnings)

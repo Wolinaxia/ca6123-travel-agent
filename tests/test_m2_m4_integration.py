@@ -57,7 +57,7 @@ def _empty(agent: str, turns: int = 1) -> list:
     return [_text_response(json.dumps({"agent": agent, "claims": [], "needs_human": False}))] * turns
 
 
-def _chat(alternatives_script: list, tmp_path, turns: int = 1):
+def _chat(alternatives_script: list, tmp_path, turns: int = 1, verifier_enabled: bool = True):
     alt = ScriptedModel(script=alternatives_script)
     specialists = {
         "flight_airport": build_placeholder_specialist("flight_airport", ScriptedModel(script=_empty("flight_airport", turns)), tools=[]),
@@ -65,7 +65,7 @@ def _chat(alternatives_script: list, tmp_path, turns: int = 1):
         "alternatives": handoff.build_m4_alternatives(alt),
     }
     chat = Conversation(scenario=SCENARIO, specialists=specialists, planner=lambda text: plan_request(text),
-                        log_dir=str(tmp_path / "logs"))
+                        verifier_enabled=verifier_enabled, log_dir=str(tmp_path / "logs"))
     return chat, alt
 
 
@@ -113,6 +113,21 @@ def test_plan_trip_shows_card_and_books_only_after_approval(tmp_path):
     assert approved["completed_actions"][-1]["tool"] == "book_trip_option"
     assert [entry["event"] for entry in approved["hitl_log"]][-1] == "booked_mock"
     assert len(alt.seen) == 2  # decisions never call a model
+
+
+def test_verifier_off_leaves_the_approval_card_unchecked(tmp_path):
+    off_chat, _ = _chat(OAK_SCRIPT, tmp_path / "off", verifier_enabled=False)
+    off = off_chat.send(REQUEST)
+    answer = off["final_answer"]
+    assert answer["verifier_enabled"] is False
+    assert off["last_verification"] is None
+    assert off["pending_proposal"]["verdicts"] == []
+    assert "Claims were not verified." in answer["text"]
+
+    on_chat, _ = _chat(OAK_SCRIPT, tmp_path / "on")
+    on = on_chat.send(REQUEST)
+    assert on["final_answer"]["verifier_enabled"] is True
+    assert on["pending_proposal"]["verdicts"]
 
 
 def test_reject_books_nothing_and_clears_the_card(tmp_path):

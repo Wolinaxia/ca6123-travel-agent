@@ -169,9 +169,10 @@ booking tool. Its final answer is JSON, also saved in `state["alternatives_resul
 | `memory.preferences.get_user_preferences()` | `pref:<user>:<key>` | Reads `state["user_id"]` |
 | `tools.booking.book_trip_option(option_id)` | `booking:MOCK-xxxxxx` | Gated by `tool_gate`; only planned, non-`likely_miss` options |
 
-**HITL.** `travel_agent.hitl`: `build_proposal(state, result)` (writes `last_verification`),
+**HITL.** `travel_agent.hitl`: `build_proposal(state, result, *, verify=True)` (writes `last_verification`),
 `render_card_text/html`, `approve(..., acknowledge_warnings=...)`, `reject`, `request_change`, `explain`,
-`execute_approved`. Approval records in `approved_actions` carry extra keys `proposal_id`, `approved_at`,
+`execute_approved`. With `verify=False` (the ablation's OFF arm) the claim checks are skipped, no
+`last_verification` is written, and the card says the claims were not verified. Approval records in `approved_actions` carry extra keys `proposal_id`, `approved_at`,
 `expires_at` (15 min); `execute_approved` also blocks if the option's evidence is older than 30 min.
 Decisions are logged to `state["hitl_log"]` and the active tracer.
 `build_proposal` adds two M4 checks after M1's Verifier: a claim that something is booked/confirmed

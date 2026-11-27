@@ -145,6 +145,37 @@ def test_card_shows_verifier_result_and_writes_last_verification():
     assert "&#10060;" in hitl.render_card_html(proposal)
 
 
+def test_verifier_off_leaves_the_card_unchecked_and_does_not_write_last_verification():
+    bad = {**GOOD_RESULT, "claims": GOOD_RESULT["claims"] + [
+        {"text": "SFO delays are 90 min.", "evidence_ids": ["faa_nas:SFO:GDP:0"], "confidence": "high", "risk": "moderate"}]}
+    state = _planned_state()
+    proposal = hitl.build_proposal(state, bad, verify=False)
+    assert proposal.verdicts == []
+    assert proposal.verification_summary == "verification disabled"
+    assert not any("Claim" in warning for warning in proposal.warnings)
+    assert "last_verification" not in state
+    card = hitl.render_card_text(proposal)
+    assert "Claims were not verified." in card
+    assert "Claims were not verified." in hitl.render_card_html(proposal)
+    assert "Agent summary (not fact-checked):" in card
+    assert "read the checked claims below" not in card
+
+    enabled = hitl.build_proposal(_planned_state(), bad)
+    assert any("Claim" in warning for warning in enabled.warnings)
+    assert any(verdict.get("status") != "supported" for verdict in enabled.verdicts)
+
+
+def test_enabled_verification_with_no_usable_claims_does_not_say_unverified():
+    state = _planned_state()
+    proposal = hitl.build_proposal(state, {**GOOD_RESULT, "claims": []})
+    assert proposal.verdicts == []
+    assert proposal.verification_summary == "no claims to verify"
+    card = hitl.render_card_text(proposal)
+    assert "Claims were not verified." not in card
+    assert "Claims were not verified." not in hitl.render_card_html(proposal)
+    assert "no claims to verify" in card
+
+
 def test_warnings_must_be_acknowledged():
     state = _planned_state()
     proposal = hitl.build_proposal(state, GOOD_RESULT)  # drive data gap -> warning
