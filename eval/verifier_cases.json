@@ -431,5 +431,45 @@
       "confidence": "high",
       "risk": "low"
     }
+  },
+  {
+    "id": "single_airport_observation_not_trip_risk",
+    "category": "supported",
+    "expect": "supported",
+    "claim": {
+      "text": "JFK has no active FAA program.",
+      "evidence_ids": [
+        "faa_nas:JFK:status"
+      ],
+      "confidence": "high",
+      "risk": "low"
+    }
+  },
+  {
+    "id": "downplay_faa_gdp_floor",
+    "category": "risk_downplayed",
+    "expect": "contradicted",
+    "claim": {
+      "text": "SFO has a ground delay program averaging 34 min.",
+      "evidence_ids": [
+        "faa_nas:SFO:GDP:0"
+      ],
+      "confidence": "high",
+      "risk": "low"
+    }
+  },
+  {
+    "id": "downplay_trip_level_same_airport",
+    "category": "risk_downplayed",
+    "expect": "contradicted",
+    "claim": {
+      "text": "JFK to SFO looks fine tonight.",
+      "evidence_ids": [
+        "faa_nas:JFK:status",
+        "coords:place"
+      ],
+      "confidence": "high",
+      "risk": "low"
+    }
   }
 ]

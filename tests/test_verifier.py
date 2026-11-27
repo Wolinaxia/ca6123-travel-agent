@@ -491,3 +491,228 @@ def test_percent_rates_are_unit_aware(state):
         verify_claim(_claim("About 40% of departures are late.", ["bts:rate"]), state["evidence_store"])["status"]
         == "contradicted"
     )
+
+
+# --- Verifier false holds fix (docs/VERIFIER_FALSE_HOLDS_FIX.md, _FIX_1.md, _FIX_2.md) ---
+#
+# After the Verifier ablation: an observation about one airport is no longer
+# compared with the trip-level summary, provided it is provably that (one
+# airport code, citations only about it, no trip or judgement wording, and
+# every active FAA program at that airport cited). It then gets a floor from
+# its own evidence. Everything else keeps the original trip-level comparison.
+
+
+def _put(store: dict, evidence_id: str, source: str, subject: str, observation: str, **data) -> None:
+    _store(store, evidence_id, {"source": source, "subject": subject, "observation": observation, "data": data})
+
+
+def _trip_store(level: str = "high", lga_program: str | None = "GDP") -> dict:
+    """LGA-BOS trip rated ``level``. BOS is calm; LGA has one FAA program (or none)."""
+    store: dict = {"evidence_store": {}}
+    _put(store, "assess:LGA-BOS:2026-11-22:evening:summary", "engine", "LGA-BOS", f"Overall trip risk {level}",
+         level=level, legs={"LGA": level, "BOS": "low"})
+    if lga_program == "GDP":
+        _put(store, "faa_nas:LGA:GDP:0", "faa_nas", "LGA", "Ground Delay Program at LGA: avg 148 min (low visibility)",
+             program="GDP", avg_delay_min=148, max_delay_min=362)
+    elif lga_program:
+        _put(store, "faa_nas:LGA:GS:0", "faa_nas", "LGA", "Ground stop at LGA", program=lga_program)
+    _put(store, "nws:LGA:no_alerts", "nws", "LGA", "No active NWS alerts near LGA", active_alerts=0)
+    _put(store, "nws:LGA:alert:0", "nws", "LGA", "Severe Thunderstorm Warning (severity Severe)",
+         event="Severe Thunderstorm Warning", severity="Severe")
+    _put(store, "aviation_wx:LGA:metar", "aviation_wx", "LGA", "LGA METAR: LIFR, wind 8 kt, gusts 38 kt",
+         flight_category="LIFR", wind_speed_kt=8, gust_kt=38)
+    _put(store, "nws_forecast:LGA:period:1", "nws_forecast", "LGA", "Light Rain (wind N 14 mph)",
+         short_forecast="Light Rain", wind="N 14 mph", precipitation_probability=80,
+         detailed_forecast=("Rain. Cloudy, with a low around 57. North wind around 14 mph, with gusts as high as "
+                            "26 mph. Chance of precipitation is 80%."))
+    _put(store, "faa_nas:BOS:status", "faa_nas", "BOS", "No active FAA program at BOS", active=False, airport="BOS")
+    _put(store, "nws:BOS:no_alerts", "nws", "BOS", "No active NWS alerts near BOS", active_alerts=0)
+    _put(store, "aviation_wx:BOS:metar", "aviation_wx", "BOS", "BOS METAR: VFR, wind 0 kt",
+         flight_category="VFR", wind_speed_kt=0)
+    return store
+
+
+def _status(store: dict, text: str, ids: list[str], risk: str | None = "low") -> dict:
+    return verify_claim(_claim(text, ids, risk=risk), store["evidence_store"])
+
+
+@pytest.mark.parametrize("text, ids, risk", [
+    ("As of 12:08 local time, there are no active NWS alerts near BOS.", ["nws:BOS:no_alerts"], "low"),
+    ("BOS currently has no active FAA delay programs.", ["faa_nas:BOS:status"], "low"),
+    ("BOS weather is currently VFR with calm winds.", ["aviation_wx:BOS:metar"], "low"),
+    # The airport's only FAA program is cited, and the risk is not below what it shows.
+    ("LGA has a Ground Delay Program averaging 148 minutes.", ["faa_nas:LGA:GDP:0"], "moderate"),
+    ("LGA has a Ground Delay Program averaging 148 minutes and is reporting LIFR conditions.",
+     ["faa_nas:LGA:GDP:0", "aviation_wx:LGA:metar"], "moderate"),
+    # The GDP is not cited, but moderate is not below what it requires.
+    ("LGA is reporting LIFR conditions.", ["aviation_wx:LGA:metar"], "moderate"),
+    ("The LGA forecast shows light rain tonight.", ["nws_forecast:LGA:period:1"], "moderate"),
+])
+def test_single_airport_observation_is_not_compared_with_the_trip_summary(text, ids, risk):
+    verdict = _status(_trip_store("high"), text, ids, risk)
+    assert verdict["status"] == "supported", verdict["reason"]
+
+
+@pytest.mark.parametrize("text", [
+    "As of 12:08 local time, there are no active NWS alerts near LGA.",
+    "LGA is operating normally.",
+    "LGA flights are on schedule.",
+    "LGA has zero delays.",
+    "LGA is clear for departures tonight.",
+])
+def test_observation_cannot_be_low_risk_while_the_airport_has_an_uncited_program(text):
+    # LGA has an active GDP in the store; the claim cites only the benign no-alerts record.
+    verdict = _status(_trip_store("elevated"), text, ["nws:LGA:no_alerts"], "low")
+    assert verdict["status"] == "contradicted", text
+    assert verdict["reason"] == "downplays rule-engine risk"
+    # A ground stop needs high, so moderate is still too low on a trip rated high.
+    verdict = _status(_trip_store("high", lga_program="ground_stop"), text, ["nws:LGA:no_alerts"], "moderate")
+    assert verdict["status"] == "contradicted", text
+    # The fix only removes holds: without a trip summary this was never held, and still is not.
+    store = _trip_store("elevated")
+    del store["evidence_store"]["assess:LGA-BOS:2026-11-22:evening:summary"]
+    assert _status(store, text, ["nws:LGA:no_alerts"], "low")["status"] == "supported"
+    # With no program at LGA the same factual sentence is a plain observation.
+    if text.startswith("As of"):
+        assert _status(_trip_store("elevated", lga_program=None), text, ["nws:LGA:no_alerts"], "low")["status"] == "supported"
+
+
+@pytest.mark.parametrize("text, ids", [
+    # Trip-level reassurance, with or without two upper-case codes.
+    ("LGA to BOS looks fine tonight.", ["faa_nas:BOS:status", "nws:LGA:no_alerts"]),
+    ("Your flight tonight should be fine.", ["faa_nas:BOS:status"]),
+    ("The trip looks low risk.", ["nws:BOS:no_alerts"]),
+    ("New York to Boston looks fine tonight.", ["faa_nas:BOS:status"]),
+    ("lga to bos looks fine tonight.", ["faa_nas:BOS:status"]),
+    ("No disruption is expected for this journey.", ["faa_nas:BOS:status", "nws:BOS:no_alerts"]),
+    # One code, only that airport cited, no program there: the wording makes it a trip-level judgement.
+    ("Everything at BOS is calm so the trip is safe.", ["faa_nas:BOS:status", "nws:BOS:no_alerts"]),
+    ("With BOS clear, your trip tonight is low risk.", ["faa_nas:BOS:status"]),
+    ("Flying into BOS tonight is low risk.", ["nws:BOS:no_alerts"]),
+    ("BOS is calm, so tonight will be easy.", ["nws:BOS:no_alerts"]),
+    ("The flight into BOS will be on time.", ["faa_nas:BOS:status"]),
+    ("Travel through BOS tonight carries little risk.", ["nws:BOS:no_alerts"]),
+    ("BOS is clear, so the whole route is fine.", ["faa_nas:BOS:status"]),
+    ("Nothing at BOS threatens tonight's flight.", ["nws:BOS:no_alerts"]),
+    ("Go ahead as planned; BOS is clear.", ["faa_nas:BOS:status"]),
+    ("Travelers through BOS face minimal risk tonight.", ["nws:BOS:no_alerts"]),
+    ("Departing LGA tonight should be risk-free.", ["nws:LGA:no_alerts"]),
+    # One airport named, but another airport's evidence cited.
+    ("BOS looks calm for arrivals.", ["faa_nas:BOS:status", "nws:LGA:no_alerts"]),
+    # Citing the engine summary keeps the original path.
+    ("Overall risk for this trip is low.", ["assess:LGA-BOS:2026-11-22:evening:summary"]),
+])
+def test_trip_level_reassurance_is_still_held(text, ids):
+    verdict = _status(_trip_store("elevated", lga_program=None), text, ids, "low")
+    assert verdict["status"] != "supported", text
+
+
+@pytest.mark.parametrize("program, ids, risk, expected", [
+    ("GDP", ["faa_nas:LGA:GDP:0"], "low", "contradicted"),
+    ("GDP", ["faa_nas:LGA:GDP:0"], "moderate", "supported"),
+    ("ground_stop", ["faa_nas:LGA:GS:0"], "moderate", "contradicted"),
+    ("ground_stop", ["faa_nas:LGA:GS:0"], "high", "supported"),
+    ("Ground Stop", ["faa_nas:LGA:GS:0"], "moderate", "contradicted"),
+    (None, ["nws:LGA:alert:0"], "low", "contradicted"),
+    (None, ["nws:LGA:alert:0"], "moderate", "supported"),
+    (None, ["aviation_wx:LGA:metar"], "low", "contradicted"),
+    (None, ["aviation_wx:LGA:metar"], "moderate", "supported"),
+])
+def test_floor_from_the_cited_evidence(program, ids, risk, expected):
+    verdict = _status(_trip_store("high", lga_program=program), "Conditions at LGA are as reported.", ids, risk)
+    assert verdict["status"] == expected, verdict["reason"]
+    if expected == "contradicted":
+        assert verdict["reason"] == "downplays cited evidence"
+
+
+def test_ga_only_closure_and_calm_observations_have_no_floor():
+    store = _trip_store("high", lga_program=None)
+    _put(store, "faa_nas:LGA:closure:0", "faa_nas", "LGA", "Runway closed to general aviation",
+         program="closure", affects_commercial=False)
+    assert _status(store, "LGA has a general aviation restriction.", ["faa_nas:LGA:closure:0"], "low")["status"] == "supported"
+    assert _status(store, "BOS is VFR.", ["aviation_wx:BOS:metar"], "low")["status"] == "supported"
+
+
+@pytest.mark.parametrize("text, ids", [
+    # Alternatives that avoid the delayed airport: the low risk describes the alternative.
+    ("Flying into BOS avoids the LGA delay.", ["faa_nas:BOS:status", "faa_nas:LGA:GDP:0"]),
+    ("The EWR to PVD option avoids the 148 minute delay at LGA.", ["plan:flight:EWR-PVD", "faa_nas:LGA:GDP:0"]),
+    ("The Amtrak option avoids the 148 minute delay at LGA and is on time.", ["plan:rail:NYP-BOS", "faa_nas:LGA:GDP:0"]),
+    ("The rail alternative is unaffected by the delay program at LGA.", ["plan:rail:NYP-BOS", "faa_nas:LGA:GDP:0"]),
+    ("Taking the train avoids LGA, so there are no delays from the delay program.", ["plan:rail:NYP-BOS", "faa_nas:LGA:GDP:0"]),
+])
+def test_comparison_claims_are_not_held(text, ids):
+    store = _trip_store("high")
+    del store["evidence_store"]["assess:LGA-BOS:2026-11-22:evening:summary"]  # alternatives are verified without it
+    _put(store, "plan:flight:EWR-PVD", "deadline_planner", "EWR-PVD", "Fly EWR to PVD: comfortable", verdict="comfortable")
+    _put(store, "plan:rail:NYP-BOS", "deadline_planner", "NYP-BOS", "Amtrak NYP to BOS: comfortable", verdict="comfortable")
+    verdict = _status(store, text, ids, "low")
+    assert verdict["status"] == "supported", verdict["reason"]
+
+
+@pytest.mark.parametrize("text, ids, risk", [
+    # True sentences with reassuring words must not be held because a program exists (unchanged from before the fix).
+    ("EWR arrivals are delayed 15-30 min but there are no delays for departures.", ["faa_nas:EWR:ARRDEP:0"], "moderate"),
+    ("There are no delays for EWR departures.", ["faa_nas:EWR:ARRDEP:0"], None),
+    ("Security wait at LGA is normal.", ["nws:LGA:no_alerts"], None),
+    ("LGA weather is fine: no active NWS alerts.", ["nws:LGA:no_alerts"], None),
+])
+def test_true_reassuring_sentences_are_not_newly_held(text, ids, risk):
+    store = _trip_store("high")
+    del store["evidence_store"]["assess:LGA-BOS:2026-11-22:evening:summary"]
+    _put(store, "faa_nas:EWR:ARRDEP:0", "faa_nas", "EWR", "Arrival delays at EWR 15-30 min",
+         program="arrival_departure", kind="Arrival", min_delay_min=15, max_delay_min=30)
+    verdict = _status(store, text, ids, risk)
+    assert verdict["status"] == "supported", verdict["reason"]
+
+
+def test_engine_citation_does_not_inherit_another_routes_summary():
+    store: dict = {"evidence_store": {}}
+    _put(store, "assess:JFK-SFO:2026-09-23:evening:summary", "engine", "JFK-SFO", "Overall trip risk low", level="low", legs={})
+    _put(store, "assess:JFK-OAK:2026-09-23:evening:summary", "engine", "JFK-OAK", "Overall trip risk high", level="high", legs={})
+    _put(store, "engine:JFK-SFO:2026-09-23:evening:NWS_NONE:1", "engine", "JFK-SFO", "No alerts on JFK-SFO or near OAK", level="low")
+    verdict = _status(store, "JFK to SFO is low risk, better than OAK.",
+                      ["engine:JFK-SFO:2026-09-23:evening:NWS_NONE:1"], "low")
+    assert verdict["status"] == "supported", verdict["reason"]
+
+
+def test_forecast_text_and_probability_numbers_are_read():
+    store = _trip_store("high")
+    forecast = ["nws_forecast:LGA:period:1"]
+    assert _status(store, "LGA forecast: gusts up to 26 mph.", forecast, None)["status"] == "supported"
+    assert _status(store, "LGA forecast: 80% chance of precipitation.", forecast, None)["status"] == "supported"
+    assert _status(store, "LGA forecast: gusts up to 46 mph.", forecast, None)["status"] != "supported"
+    assert _status(store, "LGA forecast: 30% chance of precipitation.", forecast, None)["status"] != "supported"
+
+
+def test_numbers_in_other_free_text_do_not_support_a_claim():
+    store = _trip_store("high")
+    _put(store, "faa_nas:EWR:GDP:0", "faa_nas", "EWR", "Ground Delay Program at EWR",
+         program="GDP", avg_delay_min=115, reason="volume; expect 15 minutes taxi", raw="RWY 22 CLSD 40 minutes")
+    _put(store, "metro:pop", "census", "EWR", "Metro area", metro_pop=8000000)
+    assert _status(store, "EWR ground delay program averages 15 minutes.", ["faa_nas:EWR:GDP:0"], None)["status"] != "supported"
+    assert _status(store, "EWR ground delay program averages 40 minutes.", ["faa_nas:EWR:GDP:0"], None)["status"] != "supported"
+    assert _status(store, "EWR ground delay program averages 115 minutes.", ["faa_nas:EWR:GDP:0"], None)["status"] == "supported"
+    assert _status(store, "About 8000000% of EWR flights are late.", ["metro:pop"], None)["status"] != "supported"
+
+
+@pytest.mark.parametrize("text", [
+    "LGA operations are running normally.",
+    "LGA has no active FAA programs.",
+])
+def test_program_level_acceptance_does_not_cover_a_claim_that_the_airport_is_normal(text):
+    # LGA has a GDP (uncited). Moderate is not below the GDP, but the sentence denies it.
+    verdict = _status(_trip_store("high"), text, ["nws:LGA:no_alerts"], "moderate")
+    assert verdict["status"] == "contradicted", verdict["reason"]
+
+
+def test_flight_category_wording_is_still_an_observation():
+    verdict = _status(_trip_store("high"), "BOS METAR shows VFR flight category.", ["aviation_wx:BOS:metar"], "low")
+    assert verdict["status"] == "supported", verdict["reason"]
+
+
+def test_rate_keys_keep_their_rescale_and_probability_keys_are_percent():
+    store = _trip_store("high")
+    _put(store, "x:LGA:rates", "bts", "LGA", "rates", probability_rate=0.5, precipitation_probability=80)
+    assert _status(store, "50% at LGA.", ["x:LGA:rates"], None)["status"] == "supported"
+    assert _status(store, "80% at LGA.", ["x:LGA:rates"], None)["status"] == "supported"

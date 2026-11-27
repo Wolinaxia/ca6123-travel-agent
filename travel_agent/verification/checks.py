@@ -11,9 +11,11 @@ failure modes that matter for a travel agent:
 5. numeric claims match a number of the **same unit family** in trusted evidence;
 6. airport codes mentioned in the claim appear in the cited trusted evidence;
 7. claims of normal airport operations do not contradict cited FAA programs;
-8. a risk judgement does not downplay the rule engine (cited findings *and* any
-   summary for the same route, or for a route containing an airport the claim
-   or its route-less citation names, in the store).
+8. a risk judgement does not downplay the rule engine (cited findings, a
+   summary for the same route or subject, or a summary for a route containing an
+   airport the claim or one of its route-less citations names, except for a
+   single-airport observation) and does not downplay a cited program, alert
+   severity or flight category.
 
 A future semantic judge belongs *after* these checks; see ``SEMANTIC_JUDGE_HOOK``
 below. Checks themselves stay pure functions so they are trivial to test.
@@ -23,10 +25,12 @@ Numbers
 Claims and evidence are compared by unit family: ``minutes`` (``min``, ``h``,
 ``"1 h 23 min"`` -> 83, ``90-minute``, number words one-twenty plus tens),
 ``percent``, ``knots``, ``mph``, ``km`` and ``temperature``. Evidence numbers
-come from ``observation`` and from ``data`` values whose key implies a unit
-(``*_min``, ``*minutes*``, ``*_pct``, ``*rate*`` as a fraction -> percent,
-``*_kt``/``gust*``, ``*_km``, ``*_mph``, ``temp*``). Ids, urls, timestamps,
-``rule``, coordinates and ``source_status`` are never treated as support.
+come from ``observation`` and from ``data``: values whose key implies a unit
+(``*_min``, ``*minutes*``, ``*_pct``, ``*probability*``, ``*rate*`` as a
+fraction -> percent, ``*_kt``/``gust*``, ``*_km``, ``*_mph``, ``temp*``) and
+unit-carrying numbers inside free-text values (``detailed_forecast``,
+``wind``). Ids, urls, timestamps, ``rule``, coordinates, ``scenario`` and
+``source_status`` are never treated as support.
 
 A claimed number with no same-family candidate in the trusted evidence is
 ``unsupported`` (the agent may be using an unknown source); a candidate exists
@@ -272,6 +276,15 @@ def _airport_status_conflict(text: str, evidence: list[dict[str, Any]]) -> bool:
     return False
 
 
+# Claim-risk rank an active FAA program requires (1 = moderate, 2 = high).
+_PROGRAM_FLOOR = {"gdp": 1, "arrival_departure": 1, "ground_stop": 2, "gs": 2, "closure": 2}
+
+
+def _program(data: dict[str, Any]) -> str:
+    """``data.program`` in a canonical form ("Ground Stop" -> "ground_stop")."""
+    return re.sub(r"[\s-]+", "_", str(data.get("program") or "").strip().lower())
+
+
 def _to_celsius(value: float, key: str) -> float:
     lowered = key.lower()
     if "f" in lowered.rsplit("temp", 1)[-1] or "fahrenheit" in lowered:
@@ -279,8 +292,11 @@ def _to_celsius(value: float, key: str) -> float:
     return value
 
 
+_FREE_TEXT_NUMBER_KEYS = {"detailed_forecast", "short_forecast", "wind", "wind_speed", "wind_gust"}
+
+
 def _data_numbers(data: Any) -> list[tuple[float, str]]:
-    """Numbers from ``data`` whose key implies a unit; everything else ignored."""
+    """Numbers from ``data`` whose key implies a unit, plus unit-bearing numbers in forecast prose."""
     numbers: list[tuple[float, str]] = []
     if not isinstance(data, dict):
         return numbers
@@ -318,6 +334,10 @@ def _data_numbers(data: Any) -> list[tuple[float, str]]:
             family = "percent"
             if scalar is not None and abs(scalar) <= 1.0:
                 scalar *= 100.0
+        elif "probability" in lowered or lowered == "pop":
+            # Added after the Verifier ablation (27 false holds): see docs/VERIFIER_FALSE_HOLDS_FIX_2.md.
+            # NWS gives 0-100, so no rescaling.
+            family = "percent"
         elif lowered.endswith("_kt") or lowered.startswith("gust") or "knots" in lowered:
             family = "knots"
         elif lowered.endswith("_km"):
@@ -339,6 +359,12 @@ def _data_numbers(data: Any) -> list[tuple[float, str]]:
                 for value_, unit in parsed_from_string
                 if not family or unit == family
             )
+        elif lowered in _FREE_TEXT_NUMBER_KEYS and parsed_from_string:
+            # Added after the Verifier ablation (27 false holds): see docs/VERIFIER_FALSE_HOLDS_FIX.md.
+            # Forecast prose only. Other free text (FAA reasons, engine details,
+            # alert headlines) stays out: any unit-bearing number in it could
+            # "support" an unrelated claim.
+            numbers.extend((value_, unit) for value_, unit in parsed_from_string if unit)
     return numbers
 
 
@@ -397,6 +423,7 @@ def _rule_levels(
     cited: list[dict[str, Any]],
     evidence_ids: list[str],
     claim_text: str = "",
+    single_airport: bool = False,
 ) -> list[str]:
     """Levels from cited engine findings plus same-route or same-airport summaries.
 
@@ -406,6 +433,11 @@ def _rule_levels(
     routes that contain an airport from the claim text or from a cited trusted
     subject (``JFK-SFO``, ``SFO-*``) are still compared, so a low-risk claim
     cannot hide a rule-engine warning.
+
+    ``single_airport`` (see :func:`_single_airport_observation`) switches that
+    last path off: an observation about one airport describes that airport,
+    not the trip, and gets a floor from its own evidence instead. Added after
+    the Verifier ablation (40 false holds): docs/VERIFIER_FALSE_HOLDS_FIX.md.
     """
     levels: list[str] = []
     subjects = {str(item.get("subject") or "") for item in cited}
@@ -426,7 +458,7 @@ def _rule_levels(
             break
 
     route_less_airports: set[str] = set()
-    if not has_route_citation:
+    if not has_route_citation and not single_airport:
         route_less_airports.update(_claim_places(claim_text))
         for item in cited:
             if _is_untrusted(item):
@@ -451,6 +483,98 @@ def _rule_levels(
         if same_subject or same_route or same_airport:
             levels.append(str(level))
     return levels
+
+
+_ENGINE_ID_PREFIXES = ("plan", "engine", "assess")
+
+
+# Words that make a sentence a statement about the trip or a judgement, not an
+# observation of one airport. Such a claim keeps the trip-level comparison.
+_TRIP_OR_JUDGEMENT = re.compile(
+    r"\b(?:trips?|journeys?|itinerar(?:y|ies)|routes?|travel\w*|you|your|flying|"
+    r"flight(?!\s+(?:category|rules|conditions))|"
+    r"risk\w*|low[- ]risk|safe|safely|smooth|smoothly|easy|worry|concerns?|threat\w*|"
+    r"good to go|go ahead|as planned|on time|no problems?|no issues?)\b", re.I,
+)
+
+
+def _about_airport(evidence: dict[str, Any], airport: str) -> bool:
+    return str(evidence.get("subject") or "").upper() == airport
+
+
+def _store_program_floor(active_store: dict[str, Any], airport: str) -> int | None:
+    """Claim-risk rank required by active FAA programs about ``airport`` anywhere in the store."""
+    floor: int | None = None
+    for record in active_store.values():
+        if isinstance(record, dict) and record.get("tool_ok") is False:
+            continue
+        evidence = _evidence(record)
+        if not evidence or _is_untrusted(evidence) or not _about_airport(evidence, airport):
+            continue
+        data = evidence.get("data") or {}
+        if data.get("active") is False or data.get("affects_commercial") is False:
+            continue
+        required = _PROGRAM_FLOOR.get(_program(data))
+        if required is not None and (floor is None or required > floor):
+            floor = required
+    return floor
+
+
+def _single_airport_observation(text: str, cited: list[tuple[str, dict[str, Any]]]) -> str | None:
+    """The airport a claim observes, or ``None`` when the claim is not a single-airport observation.
+
+    All of:
+
+    * the text names exactly one upper-case airport code and has no trip or
+      judgement wording (``_TRIP_OR_JUDGEMENT``);
+    * there is at least one trusted, current citation, every one of them has
+      that airport as its subject, and none is engine or planner evidence.
+
+    Anything else (no code, city names, two airports, a route citation) keeps
+    the trip-level comparison.
+
+    How ``verify_claim`` uses it: an observation's risk must not be below what
+    its own evidence shows (:func:`_evidence_risk_floor`). If the airport has
+    no active FAA program in the store, the trip-level summary is not compared
+    at all. If it has one (cited or not), the summary is still compared, but a
+    risk at or above that program's level is accepted. So the fix only ever
+    removes holds the original comparison made; it never lets "no alerts near
+    LGA, low risk" stand while LGA has a ground stop and the trip is rated higher.
+    """
+    airports = _claim_places(text)
+    if len(airports) != 1 or not cited or _TRIP_OR_JUDGEMENT.search(text):
+        return None
+    airport = airports[0]
+    for evidence_id, evidence in cited:
+        if str(evidence_id).split(":")[0].lower() in _ENGINE_ID_PREFIXES:
+            return None
+        if (evidence.get("data") or {}).get("level") in _RULE_RISK_RANK:
+            return None
+        if not _about_airport(evidence, airport):
+            return None
+    return airport
+
+
+def _evidence_risk_floor(cited: list[dict[str, Any]]) -> int | None:
+    """Lowest claim-risk rank the cited evidence itself allows (``None`` if no floor).
+
+    Active FAA program: GDP / arrival-departure delays -> moderate, ground stop
+    / closure -> high. NWS alert of severity Severe or Extreme -> moderate.
+    METAR flight category IFR or LIFR -> moderate.
+    """
+    floor: int | None = None
+    for item in cited:
+        data = item.get("data") or {}
+        required: int | None = None
+        if data.get("active") is not False and data.get("affects_commercial") is not False:
+            required = _PROGRAM_FLOOR.get(_program(data))
+        if str(data.get("severity") or "").strip().lower() in ("severe", "extreme"):
+            required = max(required or 0, 1)
+        if str(data.get("flight_category") or "").strip().lower() in ("ifr", "lifr"):
+            required = max(required or 0, 1)
+        if required is not None and (floor is None or required > floor):
+            floor = required
+    return floor
 
 
 def verify_claim(claim: Any, store: dict[str, Any], *, as_of: datetime | None = None) -> dict[str, Any]:
@@ -550,12 +674,30 @@ def verify_claim(claim: Any, store: dict[str, Any], *, as_of: datetime | None = 
     if _airport_status_conflict(text, trusted):
         record("airport_status", False, "cited evidence shows an active disruption")
         return _verdict(claim_dict, "contradicted", "cited evidence shows an active airport disruption", checks)
-
     risk = claim_dict.get("risk")
-    levels = _rule_levels(active_store, active_citations, active_ids, text)
+    trusted_ids = [key for key in active_ids if not _is_untrusted(_evidence(active_store[key]))]
+    observed = _single_airport_observation(text, [(key, _evidence(active_store[key])) for key in trusted_ids])
+    if observed and risk in _CLAIM_RISK_RANK:
+        # A single-airport observation is not compared with the trip-level
+        # summary as a trip-level claim would be; its risk must still not be
+        # below what its own evidence shows.
+        floor = _evidence_risk_floor(trusted)
+        if floor is not None and _CLAIM_RISK_RANK[str(risk)] < floor:
+            record("risk_consistent", False, f"claim {risk} is below what the cited evidence shows")
+            return _verdict(claim_dict, "contradicted", "downplays cited evidence", checks)
+
+    program_floor = _store_program_floor(active_store, observed) if observed else None
+    plain_observation = bool(observed) and program_floor is None
+    levels = _rule_levels(active_store, active_citations, active_ids, text, single_airport=plain_observation)
     if risk in _CLAIM_RISK_RANK and levels:
         claim_rank = _CLAIM_RISK_RANK[str(risk)]
         rule_rank = max(_RULE_RISK_RANK[str(level)] for level in levels)
+        if (claim_rank < rule_rank and program_floor is not None and claim_rank >= program_floor
+                and not _NORMAL_AIRPORT.search(text)):
+            # Below the trip level, but not below the FAA program at the one
+            # airport this claim observes: an observation, not a downplay.
+            record("risk_consistent", True, f"at or above the FAA program level at {observed}")
+            return _verdict(claim_dict, "supported", "consistent with the airport's FAA program", checks)
         if claim_rank < rule_rank:
             record("risk_consistent", False, f"claim {risk} < rule {sorted(set(levels))}")
             return _verdict(claim_dict, "contradicted", "downplays rule-engine risk", checks)
