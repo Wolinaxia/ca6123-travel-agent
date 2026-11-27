@@ -1,0 +1,845 @@
+{
+  "_about": "Case library for the Alternatives agent (M4). 'recorded_scenario' cases are written from the team's recorded demo snapshots in travel_agent/snapshots/scenarios. 'public_report' cases are REAL past US disruptions: the situation and outcome fields only contain facts stated in the linked public sources (figures that sources disagree on are given as ranges or left out). The 'decision' and 'lesson' fields are general traveller strategy drawn from the event, not a record of what one particular traveller did. Every case is historical: the agent must never present it as a fact about today.",
+  "cases": [
+    {
+      "id": "sfo_fog_gdp_oak",
+      "provenance": "recorded_scenario",
+      "scenario": "sfo_gdp_20260923",
+      "event_date": "2026-09-23",
+      "title": "SFO low-ceiling ground delay, evening deadline in San Francisco",
+      "disruption": "ground_delay_program",
+      "airports": [
+        "SFO",
+        "OAK",
+        "SJC",
+        "JFK",
+        "EWR"
+      ],
+      "modes": [
+        "flight",
+        "alternate_airport"
+      ],
+      "situation": "Fog and low ceilings put a Ground Delay Program on SFO arrivals (average 34 min) while JFK had no FAA program. Traveller needed to reach San Francisco the same evening.",
+      "decision": "Compared JFK-SFO with EWR-OAK and EWR-SFO. Oakland was outside the SFO delay program and still about 30 minutes from San Francisco by BART or car.",
+      "outcome": "Flying into OAK kept a larger arrival buffer than SFO; SFO stayed the backup if the program ended early.",
+      "lesson": "A destination-airport delay program often does not apply to a neighbouring airport in the same metro. Check the other metro airports before accepting the delay.",
+      "sources": []
+    },
+    {
+      "id": "nyc_dc_rail_beats_air",
+      "provenance": "recorded_scenario",
+      "scenario": "nyc_dc_20260924_0716Z",
+      "event_date": "2026-09-24",
+      "title": "New York to Washington DC: rail competitive with flying",
+      "disruption": "none_short_haul",
+      "airports": [
+        "LGA",
+        "DCA",
+        "JFK",
+        "EWR",
+        "IAD",
+        "BWI"
+      ],
+      "modes": [
+        "rail",
+        "flight",
+        "drive"
+      ],
+      "situation": "New York to Washington DC trip. Amtrak runs about 43 direct trains a day in roughly 3 hours; LGA-DCA is about 1.5 hours in the air but needs airport buffers on both ends.",
+      "decision": "Rail door to door was close to flying once security buffer and airport transfers were added, and rail is less exposed to air-traffic programs.",
+      "outcome": "Rail was the robust default; flying only made sense with a very early deadline.",
+      "lesson": "On Northeast Corridor routes under about 400 km, compare door-to-door time, not flight time. Rail usually has lower disruption exposure.",
+      "sources": []
+    },
+    {
+      "id": "faa_notam_outage_2023",
+      "provenance": "public_report",
+      "event_date": "2023-01-11",
+      "title": "FAA NOTAM computer outage: nationwide ground stop on all US departures",
+      "disruption": "nationwide_ground_stop",
+      "airports": [],
+      "modes": [
+        "flight",
+        "rail",
+        "drive"
+      ],
+      "situation": "The FAA's NOTAM (Notice to Air Missions) system failed. On the morning of 11 January 2023 the FAA paused all domestic departures for roughly 1.5 hours, the first nationwide ground stop since September 2001. By the afternoon more than 10,000 US flights had been delayed. The FAA said there was no evidence of a cyberattack.",
+      "decision": "A nationwide stop hits every US airport equally, so switching to another airport or metro does not help. Strategy: keep the booking, watch for the stop to lift, and only switch to rail or road for short trips where the deadline cannot absorb a few hours.",
+      "outcome": "The ground stop was lifted around 9 a.m. Eastern and operations resumed gradually, but delays continued through the day.",
+      "lesson": "When the cause is a national system outage, alternate airports give no protection. Ground stops can lift within hours, so do not cancel early; for short trips rail or driving is the only independent backup.",
+      "sources": [
+        "https://www.faa.gov/newsroom/faa-notam-statement",
+        "https://www.npr.org/2023/01/12/1148480971/faa-notam-outage-ground-stop",
+        "https://en.wikipedia.org/wiki/2023_FAA_system_outage"
+      ]
+    },
+    {
+      "id": "crowdstrike_it_outage_2024",
+      "provenance": "public_report",
+      "event_date": "2024-07-19",
+      "title": "CrowdStrike software outage grounds airlines; Delta recovers slowest",
+      "disruption": "airline_it_outage",
+      "airports": [],
+      "modes": [
+        "flight",
+        "other_airline"
+      ],
+      "situation": "A faulty CrowdStrike security update crashed Windows computers worldwide on 19 July 2024. American, United and Delta asked the FAA for ground stops; thousands of US flights were cancelled. American recovered by the next day, while Delta's crew-scheduling system fell behind and it did not resume normal operations until 25 July.",
+      "decision": "The problem was inside individual airlines, not the air-traffic system or the weather. Strategy: check which airline is affected, rebook on a different airline on the same route, and use the airline's free-change waiver if one is offered.",
+      "outcome": "Airlines recovered at very different speeds; travellers booked on the slowest-recovering airline faced several days of cancellations.",
+      "lesson": "When one airline's own systems fail, switching airline matters more than switching airport. Recovery speed differs a lot between airlines, so do not assume the problem ends when the first airline recovers.",
+      "sources": [
+        "https://www.npr.org/2024/07/19/g-s1-12222/microsoft-outage-banks-airlines-broadcasters",
+        "https://dallasnews.com/business/airlines/2024/07/22/delta-still-struggling-after-crowdstrike-outage-while-american-airlines-back-on-track"
+      ]
+    },
+    {
+      "id": "southwest_meltdown_2022",
+      "provenance": "public_report",
+      "event_date": "2022-12-27",
+      "title": "Southwest Airlines meltdown after the December 2022 winter storm",
+      "disruption": "airline_meltdown",
+      "airports": [
+        "DEN",
+        "MDW"
+      ],
+      "modes": [
+        "flight",
+        "other_airline"
+      ],
+      "situation": "After the late-December 2022 winter storm, Southwest's crew-scheduling system was overwhelmed and crews and planes were out of position. FlightAware put Southwest's cancellation rate at 62% on 27 December, while American, United, Delta and JetBlue were between 0% and 2%. The US Department of Transportation called it unacceptable and opened an investigation.",
+      "decision": "Once the weather had passed, the remaining cancellations were one airline's problem. Strategy: stop waiting for that airline and rebook on another carrier, or take rail or road for shorter trips.",
+      "outcome": "Southwest kept cancelling for days after other airlines had recovered; DOT later fined Southwest $140 million.",
+      "lesson": "If one airline is cancelling far more than its competitors on the same day, the cause is that airline, not the weather. Rebook on another carrier instead of waiting.",
+      "sources": [
+        "https://www.pbs.org/newshour/nation/southwest-airlines-under-scrutiny-after-wave-of-winter-storm-cancellations",
+        "https://en.wikipedia.org/wiki/2022_Southwest_Airlines_flight_delays"
+      ]
+    },
+    {
+      "id": "winter_storm_elliott_2022",
+      "provenance": "public_report",
+      "event_date": "2022-12-22",
+      "title": "Winter Storm Elliott: mass cancellations at Chicago and Denver hubs",
+      "disruption": "winter_storm",
+      "airports": [
+        "ORD",
+        "MDW",
+        "DEN"
+      ],
+      "modes": [
+        "flight",
+        "connection",
+        "rail",
+        "drive"
+      ],
+      "situation": "A major winter storm and extreme cold swept the US before Christmas 2022. On 22 December about 25% of departures at Chicago O'Hare, 37% at Chicago Midway and 27% at Denver were cancelled. Totals reported over the holiday period ran to well over 10,000 cancelled flights.",
+      "decision": "The storm hit major connecting hubs, so any itinerary connecting through them was exposed. Strategy: avoid connections through hubs in the storm path, choose a non-stop or a connection through an unaffected hub, or travel a day earlier.",
+      "outcome": "Most airlines largely recovered by 24 December; Southwest's problems grew in the following days.",
+      "lesson": "A large storm at a hub disrupts every itinerary that connects there. Route around hubs in the storm path, and move travel earlier when a big storm is forecast.",
+      "sources": [
+        "https://www.cnbc.com/2022/12/22/winter-storm-forces-airlines-to-cancel-hundreds-of-flights-christmas-week.html",
+        "https://www.axios.com/2022/12/22/flight-delay-cancel-holiday-travel-winter-storm"
+      ]
+    },
+    {
+      "id": "newark_radar_outage_2025",
+      "provenance": "public_report",
+      "event_date": "2025-04-28",
+      "title": "Newark (EWR) radar and radio outage followed by weeks of delays",
+      "disruption": "atc_equipment_staffing",
+      "airports": [
+        "EWR",
+        "JFK",
+        "LGA"
+      ],
+      "modes": [
+        "flight",
+        "alternate_airport",
+        "rail"
+      ],
+      "situation": "On 28 April 2025 controllers at the Philadelphia facility that handles Newark traffic temporarily lost radar and radio contact with aircraft (reported as about 60-90 seconds). Several controllers then took trauma leave, worsening staffing. In early May the FAA ran a ground delay program for Newark arrivals with average delays reported at close to four hours, later reduced to about 2 hours 41 minutes.",
+      "decision": "The problem was specific to one airport's air-traffic control and lasted for weeks. Strategy: use another airport in the same metro (JFK or LaGuardia) or, for Northeast Corridor trips, Amtrak.",
+      "outcome": "Disruption at Newark continued for weeks and United issued travel waivers for Newark.",
+      "lesson": "When one airport has a long-running equipment or staffing problem, a neighbouring airport in the same metro or the train is the most reliable backup.",
+      "sources": [
+        "https://www.axios.com/2025/05/05/newarks-airport-delays-cancelled-flights-staffing-shortage",
+        "https://fortune.com/article/newark-radar-failure-left-air-traffic-controllers-blind-for-90-seconds"
+      ]
+    },
+    {
+      "id": "nyc_summer_thunderstorms_2023",
+      "provenance": "public_report",
+      "event_date": "2023-06-24",
+      "title": "New York summer thunderstorms block routes at JFK, LaGuardia and Newark",
+      "disruption": "thunderstorm",
+      "airports": [
+        "EWR",
+        "JFK",
+        "LGA"
+      ],
+      "modes": [
+        "flight",
+        "rail"
+      ],
+      "situation": "From about 24 June 2023 thunderstorms in the New York area blocked arrival and departure routes at LaGuardia, JFK and Newark, and the FAA used ground stops and ground delay programs. Newark was hit hardest, with over 300 cancellations there; at one point the US had close to 7,800 delays and over 2,200 cancellations in a day.",
+      "decision": "Summer storms in the Northeast typically build in the afternoon and evening. Strategy: choose an early-morning departure, keep a later backup, and for short Northeast trips consider rail, which storms affect less.",
+      "outcome": "Disruption eased and returned over several days as storms recurred; United's Newark operation was among the worst affected.",
+      "lesson": "In summer storm season, morning flights are the safest choice in the New York area, and rail is a strong backup for short trips.",
+      "sources": [
+        "https://www.cbsnews.com/amp/news/flight-delays-northeast-united-airlines-ceo-faa-newark-airport",
+        "https://thepointsguy.com/news/summer-flight-disruptions-causes"
+      ]
+    },
+    {
+      "id": "hurricane_milton_2024",
+      "provenance": "public_report",
+      "event_date": "2024-10-09",
+      "title": "Hurricane Milton closes Tampa and Orlando airports for about three days",
+      "disruption": "hurricane",
+      "airports": [
+        "TPA",
+        "MCO",
+        "SRQ",
+        "RSW"
+      ],
+      "modes": [
+        "flight",
+        "drive"
+      ],
+      "situation": "Ahead of Hurricane Milton, Tampa International suspended operations from 9 a.m. on Tuesday 8 October 2024 and Orlando International stopped commercial flights at 8 a.m. on Wednesday 9 October. More than 2,270 flights had been cancelled by Thursday.",
+      "decision": "Hurricanes are forecast days ahead and airports announce closure times in advance. Strategy: leave before the announced closure, or postpone; do not plan to fly in or out during the storm window.",
+      "outcome": "Tampa and Orlando reopened on Friday 11 October, but about a quarter of that day's departures were still cancelled; Sarasota stayed closed for longer.",
+      "lesson": "With a hurricane, move the trip before the announced airport closure. Reopening is gradual, so expect cancellations for at least a day after the airport reopens.",
+      "sources": [
+        "https://abcnews.com/US/airports-milton-reopen-tampa-orlando-sarasota-florida/story?id=114689427"
+      ]
+    },
+    {
+      "id": "shutdown_flight_cuts_2025",
+      "provenance": "public_report",
+      "event_date": "2025-11-07",
+      "title": "Government shutdown: FAA cuts flights by 10% at 40 high-volume airports",
+      "disruption": "atc_capacity_cuts",
+      "airports": [
+        "ATL",
+        "DFW",
+        "DEN",
+        "LAX",
+        "CLT",
+        "ORD",
+        "JFK",
+        "BOS"
+      ],
+      "modes": [
+        "flight",
+        "rail",
+        "drive"
+      ],
+      "situation": "During the federal government shutdown that began on 1 October 2025, air-traffic controllers worked without pay and many facilities reported staffing limits. On 5 November the FAA announced it would reduce traffic by 10% at 40 high-volume airports, including Atlanta, Dallas, Denver, Los Angeles and Charlotte, from 7 November.",
+      "decision": "The cuts were planned in advance and lasted for days, unlike a one-off storm. Strategy: prefer non-stop flights on busy trunk routes (airlines said they would cut smaller regional routes first), allow bigger buffers, and use rail or road where it is competitive.",
+      "outcome": "Airlines cancelled flights to meet the reduction, with regional routes cut first; thunderstorms on top of the cuts caused hundreds of extra cancellations at Atlanta.",
+      "lesson": "During a lasting capacity cut, small regional flights are cancelled first. Choose non-stops on major routes, add buffer time and keep a ground backup.",
+      "sources": [
+        "https://www.npr.org/2025/11/07/nx-s1-5601586/flight-cuts-government-shutdown",
+        "https://www.pbs.org/newshour/nation/faa-plans-to-reduce-air-traffic-by-10-at-dozens-of-busy-airports-during-shutdown"
+      ]
+    },
+    {
+      "id": "atlanta_storms_delta_2025",
+      "provenance": "public_report",
+      "event_date": "2025-06-27",
+      "title": "Atlanta hail and thunderstorms: ground stop, diversions and days of Delta cancellations",
+      "disruption": "thunderstorm",
+      "airports": [
+        "ATL"
+      ],
+      "modes": [
+        "flight",
+        "connection"
+      ],
+      "situation": "On the evening of 27 June 2025 storms with hail and strong winds hit Atlanta and a ground stop was issued. Delta reported more than 90 diversions and pulled over 50 aircraft for safety checks; on Saturday 28 June it had 542 cancellations across its network.",
+      "decision": "Atlanta is Delta's main hub, so a storm there spreads across the airline's network for days. Strategy: avoid connecting through the affected hub the next day too, and prefer a non-stop or another hub.",
+      "outcome": "Cancellations continued the following day while aircraft were inspected and crews repositioned.",
+      "lesson": "A severe storm at a hub causes knock-on cancellations the next day. Avoid connecting through that hub until it has clearly recovered.",
+      "sources": [
+        "https://news.delta.com/delta-focused-customer-care-operational-recovery-following-atl-storms.md",
+        "https://www.goodmorningamerica.com/news/story/400-flights-canceled-atlanta-airport-due-severe-weather-123301711"
+      ]
+    },
+    {
+      "id": "amtrak_nec_wires_down_2024",
+      "provenance": "public_report",
+      "event_date": "2024-12-22",
+      "title": "Amtrak Northeast Corridor: downed power wires stop New York-Philadelphia trains",
+      "disruption": "rail_outage",
+      "airports": [
+        "EWR",
+        "PHL"
+      ],
+      "modes": [
+        "rail",
+        "flight",
+        "drive"
+      ],
+      "situation": "On 22 December 2024 downed overhead power wires near Philadelphia's 30th Street Station suspended Amtrak service between Philadelphia and New York. Problems continued the next day, with several Acela and Northeast Regional trains cancelled and no estimate for normal service.",
+      "decision": "Rail is usually the robust choice in the Northeast, but it has single points of failure too. Strategy: when the corridor is down, switch to a bus, driving or a short flight, and do not let rail be both Plan A and Plan B.",
+      "outcome": "Delays spread along the corridor, including trains to and from Washington, during the busy pre-Christmas period.",
+      "lesson": "Trains can fail too. Plan B must use a different mode, not another train on the same line.",
+      "sources": [
+        "https://www.trains.com/pro/passenger/intercity/amtrak-nj-transit-service-on-northeast-corridor-suspended",
+        "https://www.bloomberg.com/news/articles/2024-12-23/amtrak-passengers-face-delays-as-trains-canceled-along-northeast"
+      ]
+    },
+    {
+      "id": "atlanta_power_outage_2017",
+      "provenance": "public_report",
+      "event_date": "2017-12-17",
+      "title": "Atlanta airport blackout: underground fire cuts power for about 11 hours",
+      "disruption": "airport_power_outage",
+      "airports": [
+        "ATL"
+      ],
+      "modes": [
+        "flight",
+        "alternate_airport",
+        "connection"
+      ],
+      "situation": "On 17 December 2017 a fire in an underground electrical facility cut power to Hartsfield-Jackson Atlanta International, the world's busiest airport, around 1 p.m.; the fire also damaged equipment needed to start the backup system. Power was largely restored around midnight. Reported cancellations at Atlanta were about 1,150-1,180 flights; Delta said about 900 of its flights were cancelled that day and about 300 more were expected the next day, and Southwest cancelled all its Atlanta flights.",
+      "decision": "A whole-airport power failure stops every airline at that airport, and the effects last into the next day. Strategy: avoid connecting through the affected airport, and for trips to or from that city consider another airport within driving distance.",
+      "outcome": "Passengers were stranded in dark terminals and on aircraft, and cancellations continued into the following day.",
+      "lesson": "When an entire airport loses power, connecting through it is the biggest risk; expect cancellations to carry into the next day even after power returns.",
+      "sources": [
+        "https://www.npr.org/sections/thetwo-way/2017/12/17/571558284/airport-power-outage-in-atlanta-leaves-thousands-stranded",
+        "https://utilitydive.com/news/11-hour-power-outage-at-atlanta-airport-grounds-thousands-of-flights/513273"
+      ]
+    },
+    {
+      "id": "max9_grounding_2024",
+      "provenance": "public_report",
+      "event_date": "2024-01-06",
+      "title": "Boeing 737 MAX 9 grounding after Alaska Airlines door-plug blowout",
+      "disruption": "aircraft_grounding",
+      "airports": [
+        "PDX",
+        "SEA"
+      ],
+      "modes": [
+        "flight",
+        "other_airline"
+      ],
+      "situation": "On 5 January 2024 a door plug blew off an Alaska Airlines 737 MAX 9 after take-off from Portland. On 6 January the FAA grounded certain 737 MAX 9 aircraft (about 171 worldwide) until inspected. Alaska and United were the only US passenger airlines flying the type; on Sunday 7 January Alaska cancelled 163 flights (21% of its schedule) and United 247 (about 9%).",
+      "decision": "A grounding hits only the airlines that fly that aircraft type, for days or weeks. Strategy: check whether your flight uses the affected type, and rebook on a route or airline that does not.",
+      "outcome": "The aircraft stayed grounded until enhanced door-plug inspections were completed; both airlines reported finding loose hardware on several aircraft.",
+      "lesson": "When an aircraft type is grounded, only some airlines and routes are hit, and the problem lasts days or weeks, not hours. Rebook early onto other aircraft or airlines.",
+      "sources": [
+        "https://www.npr.org/2024/01/06/1223296736/boeing-737-max-9-planes-grounded",
+        "https://www.cbsnews.com/news/alaska-airlines-united-airlines-boeing-737-max-9-flight-cancelled"
+      ]
+    },
+    {
+      "id": "fll_flood_2023",
+      "provenance": "public_report",
+      "event_date": "2023-04-12",
+      "title": "Record rain floods Fort Lauderdale airport, closing it for about 40 hours",
+      "disruption": "flood_airport_closure",
+      "airports": [
+        "FLL",
+        "MIA",
+        "PBI"
+      ],
+      "modes": [
+        "flight",
+        "alternate_airport",
+        "drive"
+      ],
+      "situation": "Torrential rain (over 25 inches in South Florida within days) flooded Fort Lauderdale-Hollywood International, which closed late on Wednesday 12 April 2023 for about 40 hours.",
+      "decision": "A local flood closes one airport while nearby airports may still operate. Strategy: check other airports within driving distance (for Fort Lauderdale, Miami or Palm Beach) and expect reduced capacity after reopening.",
+      "outcome": "The airport reopened at 9 a.m. on Friday 14 April with only one runway available, and cancellations and delays continued after reopening.",
+      "lesson": "After a flood closure an airport often reopens with limited runways, so delays continue; a nearby airport can be the faster way out.",
+      "sources": [
+        "https://www.pbs.org/newshour/nation/fort-lauderdales-airport-reopens-as-residents-clean-up-mess",
+        "https://www.axios.com/2023/04/13/fort-lauderdale-historic-rainfall-flooding-dry-season"
+      ]
+    },
+    {
+      "id": "nyc_wildfire_smoke_2023",
+      "provenance": "public_report",
+      "event_date": "2023-06-07",
+      "title": "Canadian wildfire smoke cuts visibility at New York airports",
+      "disruption": "smoke_low_visibility",
+      "airports": [
+        "LGA",
+        "EWR",
+        "PHL",
+        "JFK"
+      ],
+      "modes": [
+        "flight",
+        "rail"
+      ],
+      "situation": "Smoke from wildfires in eastern Canada blanketed New York on 7-8 June 2023 and reduced visibility for pilots. Ground delays hit LaGuardia, Newark and Philadelphia; average LaGuardia ground delays were reported at about two hours. On 8 June the FAA paused some flights bound for LaGuardia, later downgrading the stop to a ground delay.",
+      "decision": "Low visibility from smoke acts like fog: it slows arrivals for hours or days. Strategy: allow for long ground delays into the affected airports and, for short Northeast trips, consider rail, which smoke affects far less.",
+      "outcome": "Disruption lasted several days while the smoke persisted; New York's air quality index exceeded 400.",
+      "lesson": "Wildfire smoke reduces arrival rates like fog does and can last for days; rail is a strong alternative for short trips.",
+      "sources": [
+        "https://abc7ny.com/post/nyc-smoke-air-quality-alert-flights-traffic/13355080/",
+        "https://fortune.com/2023/06/08/wildfire-smoke-major-cities-threatens-disrupt-flights-new-york-laguardia-newark-jfk/"
+      ]
+    },
+    {
+      "id": "phoenix_extreme_heat_2017",
+      "provenance": "public_report",
+      "event_date": "2017-06-20",
+      "title": "Too hot to fly: Phoenix heat grounds regional jets",
+      "disruption": "extreme_heat",
+      "airports": [
+        "PHX"
+      ],
+      "modes": [
+        "flight",
+        "time_shift"
+      ],
+      "situation": "On 20 June 2017, with a forecast high near 120F in Phoenix, American cancelled more than 40 American Eagle regional flights between 3 and 6 p.m. local time. American said the Bombardier CRJ regional jets have a maximum operating temperature of 118F; flights on larger aircraft were not affected.",
+      "decision": "Extreme heat limits some aircraft types during the hottest hours. Strategy: in a heat wave prefer early-morning or late-evening flights and flights on larger mainline aircraft.",
+      "outcome": "Only the hottest afternoon window and the smaller regional jets were affected.",
+      "lesson": "In extreme heat, small regional jets in the afternoon are most at risk; choose morning or evening flights on larger aircraft.",
+      "sources": [
+        "https://www.npr.org/sections/thetwo-way/2017/06/20/533662790/its-too-hot-for-some-planes-to-fly-in-phoenix",
+        "https://fortune.com/2017/06/20/arizona-phoenix-flight-delays-cancelled-heat/"
+      ]
+    },
+    {
+      "id": "newark_drone_ground_stop_2019",
+      "provenance": "public_report",
+      "event_date": "2019-01-22",
+      "title": "Drone sightings halt Newark arrivals",
+      "disruption": "drone_ground_stop",
+      "airports": [
+        "EWR",
+        "TEB"
+      ],
+      "modes": [
+        "flight"
+      ],
+      "situation": "On the evening of 22 January 2019 pilots reported drones near Teterboro Airport, about 17 miles north of Newark. Arrivals at Newark were held, aircraft in the air had to circle, and the FAA issued a ground stop for Newark-bound flights from other airports.",
+      "decision": "A drone sighting causes a short, sudden stop at one airport. Strategy: do not rebook immediately; expect the stop to clear within hours and keep a later flight or another metro airport as backup.",
+      "outcome": "Operations returned to normal around 6 p.m. local time, about an hour after the stop began.",
+      "lesson": "Security-related ground stops such as drone sightings are usually short; waiting is often better than rebooking, but keep a backup.",
+      "sources": [
+        "https://www.cnbc.com/2019/01/22/faa-says-drone-sightings-temporarily-halted-traffic-into-newark-airport.html",
+        "https://www.engadget.com/2019/01/23/drone-newark-airport/"
+      ]
+    },
+    {
+      "id": "hurricane_sandy_2012",
+      "provenance": "public_report",
+      "event_date": "2012-10-29",
+      "title": "Superstorm Sandy closes New York airports and halts Amtrak's Northeast Corridor",
+      "disruption": "hurricane",
+      "airports": [
+        "JFK",
+        "LGA",
+        "EWR"
+      ],
+      "modes": [
+        "flight",
+        "rail",
+        "drive"
+      ],
+      "situation": "Superstorm Sandy hit the New York area on 29 October 2012. The three major New York airports closed, and Amtrak shut down its entire Northeast Corridor on 29-30 October. JFK and Newark began reopening on the morning of 31 October with limited schedules; LaGuardia, which had water on its runways, reopened last.",
+      "decision": "A major coastal storm can shut air AND rail at the same time. Strategy: move travel well before the storm, because rail is not an independent backup when both are in the storm's path.",
+      "outcome": "Air and rail service came back gradually over several days; Amtrak first restored modified service on parts of the corridor, and full service took longer.",
+      "lesson": "Big storms can close airports and the railway together; the only safe plan is to travel before the storm or postpone.",
+      "sources": [
+        "https://www.npr.org/sections/thetwo-way/2012/10/29/163885361/travel-headaches-sandy-shuts-down-subways-cancels-flights",
+        "https://skift.com/2012/10/31/travel-in-the-northeast-u-s-is-slowly-heading-back-to-normal-with-some-caveats"
+      ]
+    },
+    {
+      "id": "texas_winter_storm_uri_2021",
+      "provenance": "public_report",
+      "event_date": "2021-02-15",
+      "title": "Winter Storm Uri: ice shuts down most flights at Dallas and Houston",
+      "disruption": "winter_storm_ice",
+      "airports": [
+        "DFW",
+        "DAL",
+        "IAH",
+        "HOU"
+      ],
+      "modes": [
+        "flight",
+        "connection",
+        "drive"
+      ],
+      "situation": "In mid-February 2021 Winter Storm Uri brought ice and record cold to Texas. Close to 1,000 flights at DFW, American's biggest hub, were cancelled on Monday 15 February (more than half the schedule) and nearly 900 on Tuesday 16 February. Southwest cancelled all Dallas Love Field flights until Monday afternoon, and Houston's two airports had to stop operations temporarily.",
+      "decision": "Ice storms in places that rarely get them shut down whole regions, including roads. Strategy: avoid connecting through the affected hubs, and do not count on driving as a backup when roads are iced too.",
+      "outcome": "Cancellations continued for days; on Thursday 18 February DFW still had nearly 700 cancellations, more than 40% of flights.",
+      "lesson": "Ice storms in warm-climate regions close airports AND roads; reroute through hubs outside the storm and expect several days of disruption.",
+      "sources": [
+        "https://www.cnbc.com/2021/02/16/texas-winter-storm-prompts-hundreds-of-flight-cancellations.html",
+        "https://dallasnews.com/business/airlines/2021/02/15/most-flights-canceled-at-dfw-airport-dallas-love-field-as-icy-weather-freezes-travel"
+      ]
+    },
+    {
+      "id": "laguardia_shutdown_staffing_2019",
+      "provenance": "public_report",
+      "event_date": "2019-01-25",
+      "title": "Shutdown staffing shortage triggers a LaGuardia ground stop",
+      "disruption": "atc_staffing",
+      "airports": [
+        "LGA",
+        "EWR",
+        "PHL"
+      ],
+      "modes": [
+        "flight",
+        "rail"
+      ],
+      "situation": "On 25 January 2019, the 35th day of a partial government shutdown with air-traffic controllers working unpaid, the FAA cited increased sick leave at two facilities (Washington, D.C. and Jacksonville) and ordered a ground stop for LaGuardia shortly before 10 a.m. Delays also hit Newark and Philadelphia.",
+      "decision": "Staffing shortages at a regional control centre affect every airport it serves. Strategy: expect short-notice ground stops during a long shutdown, and for Northeast trips keep rail as a backup.",
+      "outcome": "The ground stop was lifted at 10:37 a.m. after 1 hour 22 minutes; a deal to end the shutdown was announced hours later.",
+      "lesson": "During a long government shutdown, controller absences cause sudden ground stops; build extra buffer and keep a non-air backup for short trips.",
+      "sources": [
+        "https://www.npr.org/2019/01/25/688839511/east-coast-experiences-flight-delays-at-hubs-due-to-absent-workers",
+        "https://fortune.com/2019/01/25/laguardia-airport-shut-down-faa/"
+      ]
+    },
+    {
+      "id": "chicago_atc_center_fire_2014",
+      "provenance": "public_report",
+      "event_date": "2014-09-26",
+      "title": "Fire at Chicago air-traffic control centre stops O'Hare and Midway",
+      "disruption": "atc_facility_outage",
+      "airports": [
+        "ORD",
+        "MDW"
+      ],
+      "modes": [
+        "flight",
+        "connection",
+        "rail",
+        "drive"
+      ],
+      "situation": "On 26 September 2014 a fire, intentionally set by a contract employee, damaged the FAA's Chicago Air Route Traffic Control Center in Aurora, Illinois. O'Hare and Midway were put on a ground stop with no arrivals or departures. By mid-afternoon about 1,669 flights at the two airports had been cancelled.",
+      "decision": "When the control centre for a region fails, every airport it serves stops, so switching between those airports does not help. Strategy: avoid connecting through the region, or use rail or road to reach another region's airport.",
+      "outcome": "Flights resumed at a reduced rate after a nearly five-hour gap, and delays rippled across the country.",
+      "lesson": "A regional air-traffic control outage stops all airports in that region; alternate airports nearby give no protection, so route around the region.",
+      "sources": [
+        "https://www.npr.org/sections/thetwo-way/2014/09/26/351737896/fire-grounds-hundreds-of-flights-at-chicago-airports",
+        "https://www.pbs.org/newshour/nation/intentionally-set-fire-grounds-flights-chicago-airports"
+      ]
+    },
+    {
+      "id": "denver_bomb_cyclone_2019",
+      "provenance": "public_report",
+      "event_date": "2019-03-13",
+      "title": "Denver blizzard ('bomb cyclone') closes all runways",
+      "disruption": "blizzard",
+      "airports": [
+        "DEN"
+      ],
+      "modes": [
+        "flight",
+        "connection",
+        "time_shift"
+      ],
+      "situation": "On 13 March 2019 a rapidly intensifying storm brought blizzard conditions and winds up to 80 mph to Denver International Airport, which closed all runways at once for only the fourth time in its history. The airport reported 1,339 cancelled flights by mid-afternoon.",
+      "decision": "A forecast blizzard at a hub shuts it for most of a day. Strategy: move travel a day earlier or later, and avoid connecting through the hub on the storm day.",
+      "outcome": "All six runways were open again the next afternoon; an estimated 5,000 passengers spent the night at the airport.",
+      "lesson": "Forecast blizzards close hubs for about a day; changing the travel date is more reliable than hoping to squeeze through.",
+      "sources": [
+        "https://www.cbsnews.com/colorado/news/flights-cancelled-dia-denver-airport",
+        "https://www.weather.gov/bou/BombCycloneMarch13th2019"
+      ]
+    },
+    {
+      "id": "delta_datacenter_outage_2016",
+      "provenance": "public_report",
+      "event_date": "2016-08-08",
+      "title": "Delta data-centre power failure triggers a worldwide ground stop",
+      "disruption": "airline_it_outage",
+      "airports": [
+        "ATL"
+      ],
+      "modes": [
+        "flight",
+        "other_airline"
+      ],
+      "situation": "A power problem at Delta's Atlanta data centre led Delta to stop its flights worldwide at about 5 a.m. on 8 August 2016. About 1,000 flights were cancelled that day and another 530 by midday on 9 August.",
+      "decision": "An airline-only IT failure leaves other airlines flying normally. Strategy: rebook on another airline for urgent trips rather than wait for the affected airline's recovery.",
+      "outcome": "The ground stop was lifted the same day, but Delta said operations only returned to normal on 11 August.",
+      "lesson": "When one airline's computers fail, its recovery takes days even after flights restart; switching airline is the fastest fix.",
+      "sources": [
+        "https://www.npr.org/2016/08/08/489218050/delta-operations-resume-after-power-outage-left-travelers-stranded",
+        "https://www.pbs.org/newshour/nation/delta-air-lines-global-computer-shutdown-leaves-passengers-stranded"
+      ]
+    },
+    {
+      "id": "hurricane_ian_2022",
+      "provenance": "public_report",
+      "event_date": "2022-09-28",
+      "title": "Hurricane Ian: Tampa closed three days, Fort Myers over a week",
+      "disruption": "hurricane",
+      "airports": [
+        "TPA",
+        "RSW",
+        "SRQ",
+        "MCO"
+      ],
+      "modes": [
+        "flight",
+        "drive"
+      ],
+      "situation": "Hurricane Ian struck southwest Florida in late September 2022. Tampa International closed for nearly three days and reopened on Friday 30 September. Southwest Florida International (RSW) in Fort Myers was closed from the evening of 27 September and stayed closed for over a week, except for emergency and humanitarian flights.",
+      "decision": "Airports in the storm's direct path can stay closed far longer than airports nearby. Strategy: leave before the storm, and afterwards use an airport outside the worst-hit area rather than wait for the damaged one.",
+      "outcome": "Tampa reopened within days, while RSW reopened only in early October; hundreds of cancellations continued after reopening.",
+      "lesson": "After a hurricane, damaged airports reopen much later than nearby ones; fly from an airport outside the worst-hit area.",
+      "sources": [
+        "https://news.tampaairport.com/tampa-international-airport-to-resume-operations-at-10-am-friday/",
+        "https://www.cbsnews.com/news/hurricane-ian-flight-cancellations-airport-closures"
+      ]
+    },
+    {
+      "id": "hurricane_harvey_2017",
+      "provenance": "public_report",
+      "event_date": "2017-08-27",
+      "title": "Hurricane Harvey floods Houston and closes both airports",
+      "disruption": "hurricane_flood",
+      "airports": [
+        "IAH",
+        "HOU"
+      ],
+      "modes": [
+        "flight",
+        "drive"
+      ],
+      "situation": "Catastrophic flooding from Hurricane Harvey closed both Houston airports to commercial flights on Sunday 27 August 2017; flood water reached Hobby's runways. FlightAware counted at least 8,703 cancelled flights to or from the two airports since the Friday before. Southwest flew about 500 customers out of Hobby.",
+      "decision": "Major flooding closes airports and the roads to them for days. Strategy: do not plan to travel into or out of the flooded city; if already there, take the first evacuation or humanitarian option offered.",
+      "outcome": "Both airports resumed limited service on 30 August, three days later.",
+      "lesson": "Flooding can close a city's airports and roads together for days; postpone trips into the area and leave early if a flood is forecast.",
+      "sources": [
+        "https://fortune.com/2017/08/28/airports-hurricane-harvey/",
+        "https://money.cnn.com/2017/08/28/news/houston-air-travel-artery-blocked-airports-closed/index.html"
+      ]
+    },
+    {
+      "id": "omicron_crew_shortage_2021",
+      "provenance": "public_report",
+      "event_date": "2021-12-24",
+      "title": "Omicron sick calls cancel thousands of Christmas flights",
+      "disruption": "crew_shortage_illness",
+      "airports": [],
+      "modes": [
+        "flight",
+        "other_airline",
+        "time_shift"
+      ],
+      "situation": "Over the 2021 Christmas weekend, Omicron cases among crews forced airlines to cancel flights. United said cancellations were due to increased COVID cases limiting crew availability; one report put US holiday cancellations above 2,800, with United, Delta and JetBlue cutting at least 12% of Saturday flights.",
+      "decision": "Crew shortages hit specific airlines and spread over several days. Strategy: check your airline's cancellation rate, book the earliest flight of the day, and keep a backup on another airline.",
+      "outcome": "Cancellations continued after Christmas; United said it was unclear when normal operations would return.",
+      "lesson": "When crews are sick, cancellations come at short notice and last for days; morning flights and a backup on another airline reduce the risk.",
+      "sources": [
+        "https://www.pbs.org/newshour/nation/airlines-cancel-hundreds-of-christmas-flights-due-to-massive-rise-in-covid-19-sick-leave",
+        "https://www.bloomberg.com/news/articles/2021-12-24/airlines-scrap-1-000-u-s-holiday-weekend-flights-as-covid-bites"
+      ]
+    },
+    {
+      "id": "united_software_ground_stop_2023",
+      "provenance": "public_report",
+      "event_date": "2023-09-05",
+      "title": "Bad software update triggers a brief United nationwide ground stop",
+      "disruption": "airline_it_outage",
+      "airports": [
+        "ORD",
+        "EWR",
+        "IAH",
+        "DEN",
+        "SFO"
+      ],
+      "modes": [
+        "flight",
+        "other_airline"
+      ],
+      "situation": "On 5 September 2023 a software update slowed United's technology systems and crews could not reach dispatchers normally. United asked the FAA to stop its departures nationwide; the stop lasted a little over an hour and delayed 211 flights. United said cybersecurity was not a factor.",
+      "decision": "Short airline IT stops often clear within hours. Strategy: if the deadline allows, wait and watch; if it is tight, have a flight on another airline in mind.",
+      "outcome": "Flights resumed around 1:45 p.m. Eastern, but delays persisted at United hubs for the rest of the day.",
+      "lesson": "A short airline IT ground stop usually clears within hours, but delays linger at that airline's hubs; tight deadlines need a backup on another airline.",
+      "sources": [
+        "https://www.cbsnews.com/news/united-airlines-flights-halted",
+        "https://www.pbs.org/newshour/politics/united-airlines-departures-resume-after-equipment-outage-briefly-halted-flights-faa-says"
+      ]
+    },
+    {
+      "id": "alaska_it_outages_2025",
+      "provenance": "public_report",
+      "event_date": "2025-07-20",
+      "title": "Alaska Airlines data-centre failures ground its fleet twice in 2025",
+      "disruption": "airline_it_outage",
+      "airports": [
+        "SEA",
+        "PDX"
+      ],
+      "modes": [
+        "flight",
+        "other_airline"
+      ],
+      "situation": "On 20 July 2025 a hardware failure at Alaska Airlines' data centres led it to request a ground stop from about 8 p.m. to 11 p.m. Pacific. On 23 October 2025 a failure at its primary data centre caused another ground stop from about 3:30 p.m. to 11:30 p.m. Pacific; Alaska later reported more than 360 cancelled flights. Alaska said neither was a cyberattack.",
+      "decision": "Repeated IT failures at one airline are a reliability signal. Strategy: for an important deadline, prefer a schedule with a backup on another airline, especially on routes from that airline's hubs.",
+      "outcome": "Both stops were lifted the same day, but cancellations carried into the next morning after the October outage.",
+      "lesson": "An airline that has had recent IT failures can fail again; for critical trips keep a backup on a different airline.",
+      "sources": [
+        "https://news.alaskaair.com/on-the-record/alaska-airlines-statement-on-it-outage-july-2025/",
+        "https://www.geekwire.com/2025/alaska-airlines-cancels-360-flights-says-significant-it-outage-was-due-to-failure-at-a-data-center/"
+      ]
+    },
+    {
+      "id": "northeast_noreasters_2018",
+      "provenance": "public_report",
+      "event_date": "2018-03-02",
+      "title": "March 2018 nor'easters: repeated storms shut flights and Amtrak in the Northeast",
+      "disruption": "winter_storm",
+      "airports": [
+        "JFK",
+        "LGA",
+        "EWR",
+        "BOS",
+        "PHL"
+      ],
+      "modes": [
+        "flight",
+        "rail",
+        "time_shift"
+      ],
+      "situation": "A series of nor'easters hit the Northeast in March 2018. In the 1-3 March storm Amtrak suspended Northeast Corridor service and more than 3,000 flights were cancelled. On 7 March about 2,787 flights were cancelled at airports including New York, Newark, Boston and Philadelphia, and on 21 March Winter Storm Toby caused more than 4,400 cancellations.",
+      "decision": "Nor'easters affect air and rail along the whole corridor at once. Strategy: change the travel day rather than switch mode, because Amtrak is often reduced at the same time.",
+      "outcome": "More than 10,000 Northeast flights were cancelled across the month's storms; Amtrak ran modified schedules and restored full corridor service after each storm.",
+      "lesson": "In a nor'easter, rail is not a reliable backup for flights; moving the trip date is the safest option.",
+      "sources": [
+        "https://fortune.com/2018/03/02/flights-grounded-noreaster/",
+        "https://www.travelpulse.com/news/impacting-travel/winter-storm-toby-causing-thousands-of-flight-cancellations.html"
+      ]
+    },
+    {
+      "id": "dca_midair_collision_2025",
+      "provenance": "public_report",
+      "event_date": "2025-01-29",
+      "title": "Reagan National (DCA) closes after a midair collision, then runs at reduced capacity",
+      "disruption": "airport_closure_accident",
+      "airports": [
+        "DCA",
+        "IAD",
+        "BWI"
+      ],
+      "modes": [
+        "flight",
+        "alternate_airport",
+        "rail"
+      ],
+      "situation": "On 29 January 2025 a regional jet and a military helicopter collided near Reagan Washington National Airport, killing all 67 people aboard. The airport closed briefly; the main runway reopened soon after, but two shorter runways stayed closed until 11 February 2025, and the FAA restricted helicopter traffic around the airport.",
+      "decision": "After a serious accident an airport can operate for weeks at reduced capacity. Strategy: for Washington, consider Dulles (IAD) or Baltimore (BWI), or Amtrak from the Northeast.",
+      "outcome": "On 11 February the FAA reopened the two runways and raised DCA's arrival rate to 28 aircraft per hour.",
+      "lesson": "An airport that reopens after an accident may run below normal capacity for weeks; the other airports in the metro area or rail are the better choice.",
+      "sources": [
+        "https://www.faa.gov/newsroom/faa-statements-midair-collision-reagan-washington-national-airport",
+        "https://www.npr.org/2025/02/11/g-s1-48207/faa-runways-dca-american-black-hawk"
+      ]
+    },
+    {
+      "id": "southwest_october_2021",
+      "provenance": "public_report",
+      "event_date": "2021-10-10",
+      "title": "Southwest's October 2021 meltdown after Florida weather and ATC delays",
+      "disruption": "airline_meltdown",
+      "airports": [
+        "MCO",
+        "MIA",
+        "FLL",
+        "MDW"
+      ],
+      "modes": [
+        "flight",
+        "other_airline"
+      ],
+      "situation": "Florida weather and FAA delay programs on Friday 8 October 2021 (the FAA cited severe weather, military training and limited staffing at its Jacksonville centre) left Southwest's aircraft and crews out of place. Southwest cancelled more than 800 flights on Saturday and more than 1,000 (29% of its schedule) on Sunday.",
+      "decision": "A few hours of disruption can snowball at one airline for days, while other airlines recover. Strategy: if your airline is cancelling far more than others, rebook on another airline.",
+      "outcome": "Bloomberg Law later reported nearly 3,100 Southwest cancellations over four days; the CEO said there were no ATC issues over the weekend itself.",
+      "lesson": "An airline with crews and planes out of position can keep cancelling for days after the original cause has gone; switch airline.",
+      "sources": [
+        "https://abc7news.com/post/southwest-airlines-flights-cancellations-delays/11107276/",
+        "https://news.bloomberglaw.com/daily-labor-report/southwest-warns-of-need-for-more-staff-to-end-flight-disruptions"
+      ]
+    },
+    {
+      "id": "spirit_meltdown_2021",
+      "provenance": "public_report",
+      "event_date": "2021-08-03",
+      "title": "Spirit Airlines cancels up to 60% of flights for days",
+      "disruption": "airline_meltdown",
+      "airports": [
+        "FLL",
+        "MCO",
+        "LAS"
+      ],
+      "modes": [
+        "flight",
+        "other_airline"
+      ],
+      "situation": "In early August 2021 Spirit cancelled 19% of its schedule on 1 August, then 42% on 2 August, 61% on 3 August and 60% on 4 August, according to FlightAware figures. Its CEO cited more than 2,000 cancellations in a week. Spirit blamed weather, staffing shortages and technology problems.",
+      "decision": "When an airline cancels a large share of its schedule for several days, waiting for a rebooked flight on the same airline is unreliable. Strategy: buy a ticket on another airline for time-critical trips.",
+      "outcome": "By about 12 August Spirit's cancellations had fallen to around 2% of its schedule.",
+      "lesson": "During an airline meltdown, rebooking on the same airline often fails again; switch airline when the deadline matters.",
+      "sources": [
+        "https://www.cnbc.com/2021/08/04/spirit-airlines-cancels-nearly-half-its-flights-to-reboot-operation.html",
+        "https://onemileatatime.com/news/spirit-airlines-operational-meltdown/"
+      ]
+    },
+    {
+      "id": "hurricane_irma_miami_2017",
+      "provenance": "public_report",
+      "event_date": "2017-09-10",
+      "title": "Hurricane Irma closes Miami International for two days",
+      "disruption": "hurricane",
+      "airports": [
+        "MIA",
+        "FLL"
+      ],
+      "modes": [
+        "flight",
+        "drive"
+      ],
+      "situation": "Ahead of Hurricane Irma, American cancelled all its Miami flights from the evening of Friday 8 September 2017. Miami International was closed on Sunday and Monday and its CEO reported significant water damage in the terminals.",
+      "decision": "Hurricanes are forecast days ahead and airlines cancel before the storm arrives. Strategy: leave before the airline's cancellation window, not just before the storm.",
+      "outcome": "Miami International resumed limited passenger and cargo flights on Tuesday 12 September; thousands of flights had been cancelled.",
+      "lesson": "Airlines stop flying well before a hurricane arrives; the real deadline is the airline's last flight, not the storm's landfall.",
+      "sources": [
+        "https://fortune.com/2017/09/11/miami-international-airport-flordia-hurricane-irma/",
+        "https://www.cbsnews.com/miami/news/south-florida-airports-re-open-with-limited-operations"
+      ]
+    },
+    {
+      "id": "penn_station_power_2024",
+      "provenance": "public_report",
+      "event_date": "2024-06-20",
+      "title": "Power and wire failures stop trains in and out of New York Penn Station",
+      "disruption": "rail_outage",
+      "airports": [
+        "EWR"
+      ],
+      "modes": [
+        "rail",
+        "flight",
+        "drive"
+      ],
+      "situation": "In the week of 18-22 June 2024 a malfunctioning circuit breaker cut power on the tracks between New York Penn Station and Newark Penn Station, and overhead-wire problems and a disabled train repeatedly suspended or delayed NJ Transit and Amtrak service in and out of Penn Station.",
+      "decision": "The tracks into New York Penn Station are a single point of failure for rail across the Northeast. Strategy: on rail-dependent trips through New York, keep a flight or bus as Plan B and allow extra buffer.",
+      "outcome": "Service was restored after each incident, and on 27 June 2024 Amtrak and NJ Transit announced a joint plan to improve reliability.",
+      "lesson": "Rail into New York depends on one stretch of track; repeated power failures there mean rail needs a non-rail backup.",
+      "sources": [
+        "https://abc7ny.com/post/amtrak-njtransit-rail-service-delayed-penn-station-due-overhead-wire/14981317/",
+        "https://media.amtrak.com/2024/06/amtrak-and-nj-transit-are-executing-joint-plan-to-accelerate-investigations-of-disruptions-and-improve-reliability-between-new-jersey-and-new-york/"
+      ]
+    }
+  ]
+}

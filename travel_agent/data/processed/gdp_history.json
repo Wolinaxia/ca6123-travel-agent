@@ -1,0 +1,111 @@
+{
+ "_about": "Learned from REAL data: FAA ATCSCC ground delay program advisories (2025) joined with BTS per-flight arrival records for flights landing during those programs. Built by eval/backtest_gdp_history.py; back-tested on 2026 programs in eval/results/m4_gdp_backtest.md. Minutes are percentiles over flights.",
+ "learned_from": "programs starting 2025-01..2025-12",
+ "quantile": 0.9,
+ "min_flights": 150,
+ "groups": {
+  "wind": {
+   "programs": 61,
+   "gdp_flights": 8289,
+   "gdp_extra_over_announced_q50": -15,
+   "gdp_extra_over_announced_q90": 59,
+   "gdp_cancel_or_divert_rate": 0.0388,
+   "neighbour_flights": 4512,
+   "neighbour_delay_q50": 0,
+   "neighbour_delay_q90": 54,
+   "neighbour_cancel_or_divert_rate": 0.0133
+  },
+  "all": {
+   "programs": 479,
+   "gdp_flights": 65335,
+   "gdp_extra_over_announced_q50": -14,
+   "gdp_extra_over_announced_q90": 78,
+   "gdp_cancel_or_divert_rate": 0.0792,
+   "neighbour_flights": 28446,
+   "neighbour_delay_q50": 0,
+   "neighbour_delay_q90": 64,
+   "neighbour_cancel_or_divert_rate": 0.0306
+  },
+  "other": {
+   "programs": 196,
+   "gdp_flights": 25771,
+   "gdp_extra_over_announced_q50": -17,
+   "gdp_extra_over_announced_q90": 64,
+   "gdp_cancel_or_divert_rate": 0.0807,
+   "neighbour_flights": 14478,
+   "neighbour_delay_q50": 0,
+   "neighbour_delay_q90": 53,
+   "neighbour_cancel_or_divert_rate": 0.0111
+  },
+  "snow_ice": {
+   "programs": 19,
+   "gdp_flights": 4782,
+   "gdp_extra_over_announced_q50": -12,
+   "gdp_extra_over_announced_q90": 94,
+   "gdp_cancel_or_divert_rate": 0.105,
+   "neighbour_flights": 1192,
+   "neighbour_delay_q50": 5,
+   "neighbour_delay_q90": 94,
+   "neighbour_cancel_or_divert_rate": 0.1779
+  },
+  "low_visibility": {
+   "programs": 92,
+   "gdp_flights": 10502,
+   "gdp_extra_over_announced_q50": -16,
+   "gdp_extra_over_announced_q90": 58,
+   "gdp_cancel_or_divert_rate": 0.0417,
+   "neighbour_flights": 5280,
+   "neighbour_delay_q50": 0,
+   "neighbour_delay_q90": 60,
+   "neighbour_cancel_or_divert_rate": 0.0189
+  },
+  "thunderstorms": {
+   "programs": 111,
+   "gdp_flights": 15991,
+   "gdp_extra_over_announced_q50": -3,
+   "gdp_extra_over_announced_q90": 114,
+   "gdp_cancel_or_divert_rate": 0.1146,
+   "neighbour_flights": 2984,
+   "neighbour_delay_q50": 16,
+   "neighbour_delay_q90": 122,
+   "neighbour_cancel_or_divert_rate": 0.1129
+  }
+ },
+ "faa_raised_average_later": {
+  "other": {
+   "programs": 429,
+   "raised": 54,
+   "share": 0.126
+  },
+  "all": {
+   "programs": 927,
+   "raised": 145,
+   "share": 0.156
+  },
+  "low_visibility": {
+   "programs": 146,
+   "raised": 17,
+   "share": 0.116
+  },
+  "snow_ice": {
+   "programs": 54,
+   "raised": 12,
+   "share": 0.222
+  },
+  "wind": {
+   "programs": 105,
+   "raised": 20,
+   "share": 0.19
+  },
+  "thunderstorms": {
+   "programs": 193,
+   "raised": 42,
+   "share": 0.218
+  }
+ },
+ "checks_case_lessons": [
+  "sfo_fog_gdp_oak",
+  "nyc_summer_thunderstorms_2023"
+ ],
+ "built_at": "2026-11-27T03:37:10+00:00"
+}

@@ -131,3 +131,44 @@ carry the four guardrail callbacks (see `agents.specialists.guarded_callbacks`).
 `agents.orchestrator.run_pipeline(request, scenario=None, verifier_enabled=True)`
 runs one request end to end and returns these keys plus `evidence_store` and
 `trace_run_id`. `risk_engine=None` skips the rule engine (offline tests). `verifier_enabled=False` is the ablation "Verifier OFF" arm.
+
+## M4: Alternatives agent, mock booking, HITL, memory
+
+**Agent.** `travel_agent.agents.alternatives.build_alternatives_agent(model=..., tracer=None, use_cases=True)` returns a
+guarded `LlmAgent` named `alternatives` (all four M1 callbacks; `assert_guarded` passes). It has **no**
+booking tool. Its final answer is JSON, also saved in `state["alternatives_result"]`; parse it with
+`parse_agent_result(text)`. The output is a superset of `AgentResult`:
+
+| Field | Meaning |
+|---|---|
+| `agent`, `claims`, `needs_human` | as in `AgentResult` |
+| `recommended_option_id` / `plan_b_option_id` | `plan:<mode>:<route>` evidence ids |
+| `switch_trigger`, `decide_by` | copied from `plan:contingency` |
+| `lessons_used` / `preferences_used` | `case:...` / `pref:...` ids |
+| `summary` | 2–3 sentences for the traveller |
+
+**New tools and evidence ids.**
+
+| Tool | Evidence ids | Notes |
+|---|---|---|
+| `tools.deadline_planner.plan_trip_options(origin, destination, deadline, earliest_departure="")` | `plan:<mode>:<route>`, `plan:contingency`, `plan:excluded:...`, `plan:data_gaps` (+ the FAA/BTS/Amtrak/OSRM evidence it used) | Deterministic. `data` has `door_to_door_min`, `expected_delay_min`, `slack_min`, `delay_tolerance_min`, `verdict`, `level` (low/elevated/high, so the Verifier's risk check applies), `delay_unknown` (FAA data missing: never rated comfortable), `avoids_delays_at` (e.g. `{"SFO": 34}`), `history_margin_min` / `history_id` / `history_downgraded` (learned from real FAA+BTS history: landing at an airport with a ground delay program is "comfortable" only if it survives the 90th-percentile delay (beyond the announced average) real flights had in similar 2025 programs; options landing at a same-metro neighbour cite their own statistic but are not downgraded; evidence `history:gdp:<kind>:<gdp|neighbour>`). Refuses unknown places, unreadable or past deadlines, and origin = destination (< 30 km) |
+| `memory.cases.search_disruption_cases(query, top_k=3)` | `case:<id>` | Agentic RAG over 33 real past US disruptions (`provenance: public_report`, with `event_date` and `sources`) plus 2 recorded demo days. Meaning-based (Gemini embeddings, then a Gemini re-rank of the 10 closest that may only reorder real case ids; `TDA_CASE_RERANK=0` turns it off) when a key is available, keyword (BM25) otherwise; `data.retriever` says which. Always `data.untrusted=True`: guidance only, never proof |
+| `memory.preferences.get_user_preferences()` | `pref:<user>:<key>` | Reads `state["user_id"]` |
+| `tools.booking.book_trip_option(option_id)` | `booking:MOCK-xxxxxx` | Gated by `tool_gate`; only planned, non-`likely_miss` options |
+
+**HITL.** `travel_agent.hitl`: `build_proposal(state, result)` (writes `last_verification`),
+`render_card_text/html`, `approve(..., acknowledge_warnings=...)`, `reject`, `request_change`, `explain`,
+`execute_approved`. Approval records in `approved_actions` carry extra keys `proposal_id`, `approved_at`,
+`expires_at` (15 min); `execute_approved` also blocks if the option's evidence is older than 30 min.
+Decisions are logged to `state["hitl_log"]` and the active tracer.
+`build_proposal` adds two M4 checks after M1's Verifier: a claim that something is booked/confirmed
+without a cited `booking:` id is `unsupported`, and a claim citing only an active FAA program with
+risk below its floor (GDP → moderate, ground stop/closure → high) is `contradicted`.
+`request_change` returns `ok=False` and `message_for_agent=None` when the text looks like an instruction to the AI
+(`memory.text_safety.looks_like_instruction`: M1's filter after NFKC normalisation, plus common non-English phrasings).
+Learned cases store only tool-generated text (never the model's summary). Preference files are per user; ids that
+need sanitising get a hash suffix so `alice.smith` and `alice_smith` never share memory.
+Red-team tests: `tests/test_m4_danger.py`. Evals: `python -m eval.run_m4_eval` (offline) and
+`python -m eval.run_m4_live_eval` (real Gemini).
+
+**Memory files** live in `TDA_MEMORY_DIR` (default `.memory/`, git-ignored).
