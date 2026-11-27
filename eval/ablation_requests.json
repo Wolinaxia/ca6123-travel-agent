@@ -1,0 +1,20 @@
+[
+ {"id": "a01", "scenario": "nyc_rain_20261122_1708z", "intent": "assess_trip", "text": "How risky is my flight from New York to Boston this evening?"},
+ {"id": "a02", "scenario": "nyc_rain_20261122_1708z", "intent": "assess_trip", "text": "Is LGA to BOS likely to be delayed this afternoon?"},
+ {"id": "a03", "scenario": "nyc_rain_20261122_1708z", "intent": "assess_trip", "text": "I'm flying EWR to BOS tonight. Should I worry about delays?"},
+ {"id": "a04", "scenario": "nyc_rain_20261122_1708z", "intent": "assess_trip", "text": "What's the disruption risk for JFK to Boston today evening?"},
+ {"id": "a05", "scenario": "nyc_rain_20261122_1708z", "intent": "assess_trip", "text": "Boston to New York this evening: how bad are delays into LaGuardia?"},
+ {"id": "p01", "scenario": "nyc_rain_20261122_1708z", "intent": "plan_trip", "text": "I need to be in Boston by 9pm today, leaving from New York. What's my best option?"},
+ {"id": "p02", "scenario": "nyc_rain_20261122_1708z", "intent": "plan_trip", "text": "Get me from Newark to Boston before 8pm today."},
+ {"id": "p03", "scenario": "nyc_rain_20261122_1708z", "intent": "plan_trip", "text": "I must reach Boston by 10pm tonight from New York; I prefer the train if it's close."},
+ {"id": "r01", "scenario": "nyc_rain_20261122_1708z", "intent": "rebook", "text": "My LGA to BOS flight this evening looks delayed. Should I rebook?"},
+ {"id": "r02", "scenario": "nyc_rain_20261122_1708z", "intent": "rebook", "text": "My 6pm EWR to BOS flight today may be delayed. Find me another way to Boston by 10pm."},
+ {"id": "a06", "scenario": "nyc_rain_20261122_1550z", "intent": "assess_trip", "text": "How risky is New York to Boston today evening?"},
+ {"id": "a07", "scenario": "nyc_rain_20261122_1550z", "intent": "assess_trip", "text": "Any delays at LaGuardia for a flight to Boston this afternoon?"},
+ {"id": "a08", "scenario": "nyc_rain_20261122_1550z", "intent": "assess_trip", "text": "Is JFK to BOS on time this evening?"},
+ {"id": "p04", "scenario": "nyc_rain_20261122_1550z", "intent": "plan_trip", "text": "I need to get from New York to Boston by 7pm today."},
+ {"id": "r03", "scenario": "nyc_rain_20261122_1550z", "intent": "rebook", "text": "My LGA to BOS flight this afternoon is delayed; should I switch to another option?"},
+ {"id": "a09", "scenario": "calm_baseline_20261121", "intent": "assess_trip", "text": "How risky is New York to Boston today evening?"},
+ {"id": "a10", "scenario": "calm_baseline_20261121", "intent": "assess_trip", "text": "Is EWR to BOS likely to be delayed this evening?"},
+ {"id": "p05", "scenario": "calm_baseline_20261121", "intent": "plan_trip", "text": "I need to be in Boston by 9pm today from New York. What's the best way?"}
+]

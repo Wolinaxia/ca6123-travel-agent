@@ -314,6 +314,19 @@ def combine_verifications(*parts: dict[str, Any]) -> dict[str, Any]:
     return _summarise(verdicts, any(part.get("needs_human") for part in parts))
 
 
+def verify_results(results: dict[str, dict[str, Any]], store: dict[str, Any],
+                   rules_result: Optional[dict[str, Any]]) -> dict[str, Any]:
+    """flight_airport + weather claims vs store + rule-engine evidence; alternatives claims vs store only."""
+    with_rules = {"evidence_store": dict(store)}
+    if rules_result:
+        add_tool_result(with_rules, rules_result)
+    signal_claims = [c for name in ("flight_airport", "weather")
+                     for c in results.get(name, {}).get("claims", [])]
+    alternative_claims = results.get("alternatives", {}).get("claims", [])
+    return combine_verifications(verify_claims(signal_claims, with_rules["evidence_store"]),
+                                 verify_claims(alternative_claims, store))
+
+
 def merge_verdicts(verification: dict[str, Any], tail: list[dict[str, Any]]) -> dict[str, Any]:
     """Replace the alternatives verdicts (the last claims) with M4's stricter ones.
 
@@ -542,15 +555,9 @@ class TravelOrchestrator(BaseAgent):
         #    own planner level; the trip summary would wrongly flag "OAK avoids
         #    the SFO delay, low risk" as downplaying the JFK-SFO risk.
         store = dict(ctx.session.state.get("evidence_store") or {})
-        with_rules = {"evidence_store": dict(store)}
-        if rules.get("result"):
-            add_tool_result(with_rules, rules["result"])
         verification = None
         if self.verifier_enabled:
-            signal_claims = [c for name in ("flight_airport", "weather") for c in results.get(name, {}).get("claims", [])]
-            alternative_claims = results.get("alternatives", {}).get("claims", [])
-            verification = combine_verifications(verify_claims(signal_claims, with_rules["evidence_store"]),
-                                                 verify_claims(alternative_claims, store))
+            verification = verify_results(results, store, rules.get("result"))
 
         # 5b. Approval card (M4 HITL): only for intents that end in a booking.
         proposal, extra = None, {}
