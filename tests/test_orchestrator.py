@@ -266,6 +266,34 @@ def test_parse_agent_result_accepts_fences_and_drops_bad_claims():
     assert result["claims"] == [{"text": "ok", "evidence_ids": ["a"], "confidence": "low", "risk": None, "agent": "weather"}]
 
 
+@pytest.mark.parametrize("alias", ["exact_evidence_ids", "evidence_id", "evidence", "citations"])
+@pytest.mark.parametrize("ids, expected", [(["a", "b"], ["a", "b"]), ("a", ["a"])])
+def test_parse_agent_result_accepts_evidence_alias_keys(alias, ids, expected):
+    raw = {"claims": [{"text": "ok", alias: ids, "confidence": "high"}]}
+    result = parse_agent_result(raw, "weather")
+    assert result["claims"][0]["evidence_ids"] == expected
+
+
+def test_parse_agent_result_keeps_evidence_ids_over_an_alias():
+    raw = {"claims": [{"text": "ok", "evidence_ids": ["real"], "exact_evidence_ids": ["alias"]}]}
+    assert parse_agent_result(raw, "weather")["claims"][0]["evidence_ids"] == ["real"]
+
+
+def test_parse_agent_result_does_not_replace_empty_evidence_ids_with_an_alias():
+    raw = {"claims": [{"text": "ok", "evidence_ids": [], "exact_evidence_ids": ["alias"]}]}
+    assert parse_agent_result(raw, "weather")["claims"][0]["evidence_ids"] == []
+
+
+def test_parse_agent_result_falls_back_to_an_alias_when_evidence_ids_is_null():
+    raw = {"claims": [{"text": "ok", "evidence_ids": None, "citations": "alias"}]}
+    assert parse_agent_result(raw, "weather")["claims"][0]["evidence_ids"] == ["alias"]
+
+
+def test_parse_agent_result_claim_without_citation_keys_has_no_evidence():
+    result = parse_agent_result({"claims": [{"text": "ok"}]}, "weather")
+    assert result["claims"][0]["evidence_ids"] == []
+
+
 def test_parse_agent_result_garbage_escalates():
     result = parse_agent_result("sorry, I could not do it", "weather")
     assert result["claims"] == [] and result["needs_human"] is True and "error" in result
